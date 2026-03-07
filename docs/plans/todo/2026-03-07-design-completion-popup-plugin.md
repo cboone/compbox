@@ -70,7 +70,9 @@ On plugin load (`zcm-enable`):
 1. Save current Tab binding and create a frozen copy:
    `zle -A $orig_widget .zcm-orig-$orig_widget`
 1. Bind Tab to `zcm-complete` in both emacs and viins keymaps
-1. Hook `compadd` by replacing it with `-zcm-compadd`
+1. Hook `compadd` by defining a shell function named `compadd` that shadows the
+   builtin; this function delegates to `-zcm-compadd` for capture and uses
+   `builtin compadd` for the real builtin call
 1. Hook `_main_complete` by wrapping it with `-zcm-complete`
 1. Save and set `zstyle ':completion:*' list-grouped false` (handle grouping
    ourselves; the original value is restored by `zcm-disable`)
@@ -437,7 +439,7 @@ sufficient for v1.
    parsing complexity (see conversation notes for full analysis)
 1. **recursive-edit over blocking read loop**: works within zle's event model
    correctly, no busy-waiting or async complexity
-1. **tmux-only**: uses `tmux capture-pane` for pixel-perfect screen save/restore;
+1. **tmux-only**: uses `tmux capture-pane` for character-perfect screen save/restore;
    non-tmux support deferred (would require `zle reset-prompt` fallback with
    imperfect restore of content above the prompt)
 1. **Stable candidate ids**: selection and apply are keyed by captured candidate
