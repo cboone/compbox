@@ -25,6 +25,7 @@ Requires tmux (uses `tmux capture-pane` for screen save/restore).
 - `menu-style default`: terminal default fg/bg
 - `menu-selected-style bg=terminal,fg=red`: red text for selected item
 - `menu-border-style default`: default-colored borders
+- Non-selected candidates use terminal default colors
 - Group dividers: `├────────────────┤` (tmux menu separator style)
 
 ---
@@ -35,9 +36,10 @@ The plugin has two layers:
 
 1. **Interception layer**: captures completion candidates from zsh's compsys by
    wrapping the `compadd` builtin (proven pattern from fzf-tab)
-1. **Presentation layer**: renders a bordered popup using ANSI escape sequences,
-   handles navigation via `zle recursive-edit` with a temporary keymap, shows
-   ghost text preview of the selected candidate on the command line
+1. **Presentation layer**: renders a single-column bordered popup using ANSI
+   escape sequences, handles navigation via `zle recursive-edit` with a
+   temporary keymap, shows ghost text preview of the selected candidate on the
+   command line, and restores the underlying screen region on exit
 
 ```text
 Tab press
@@ -46,13 +48,13 @@ Tab press
     -> original expand-or-complete
       -> _main_complete (hooked)
         -> compadd (wrapped, captures candidates)
-    -> process candidates (colorize, group)
+    -> process candidates (group)
     -> determine initial selection (match autosuggestion if possible)
     -> save screen region (tmux capture-pane)
     -> render popup (ANSI escape sequences)
     -> set ghost text ($POSTDISPLAY) for selected candidate
     -> recursive-edit (navigation loop)
-    -> restore screen, clear ghost text
+    -> restore screen, restore ghost text
     -> _zcm-apply (insert selected match)
 ```
 
@@ -79,19 +81,44 @@ Replaces the `compadd` builtin. On each call from a completion function:
 1. Pass through immediately if `-O`, `-A`, or `-D` flags are present (query-mode
    calls) or if `IN_ZCM` is unset
 1. Capture candidates: `builtin compadd -A __hits -D __dscr "$@"`
+1. Assign each captured candidate a stable integer `id`
 1. Pack each candidate with metadata into `_zcm_compcap` array:
-   - Format: `<display>\x02<metadata>` where metadata is NUL-delimited key-value pairs
+   - Format: `<id>\x02<display>\x02<metadata>` where metadata is NUL-delimited
+     key-value pairs
    - Keys: `word`, `apre`, `hpre`, `PREFIX`, `SUFFIX`, `IPREFIX`, `ISUFFIX`,
      `group`, `realdir`, `args`
 1. Also call `builtin compadd "$@"` to keep `compstate` bookkeeping correct
 
-### 1.3 Candidate Data Structure
+### 1.3 Candidate Data Structures
+
+The popup tracks two related collections:
 
 ```text
-_zcm_compcap (array): each element is:
-  <display_text>\x02<\0>\0key1\0val1\0key2\0val2...\0word\0<actual_word>
+raw candidates
+  Captured directly from wrapped `compadd` calls. Each candidate has a stable
+  integer `id` and stores:
+  - `display`
+  - `word`
+  - `group`
+  - captured insertion state: `PREFIX`, `SUFFIX`, `IPREFIX`, `ISUFFIX`
+  - `apre`, `hpre`, `realdir`
+  - original `compadd` args
 
-_zcm_groups (unique array): group description strings in order
+visible rows
+  Derived from raw candidates for rendering. Each row stores:
+  - `candidate_id` for selectable rows
+  - row kind: `candidate`, `divider`, or `empty`
+  - rendered text
+
+popup state
+  - raw candidate list
+  - visible row list
+  - selected visible-row index
+  - viewport start
+  - filter string
+  - pending action: `accept` or `cancel`
+  - saved `$POSTDISPLAY`
+  - saved screen region
 ```
 
 ### 1.4 Selection Insertion (`_zcm-apply`)
@@ -100,13 +127,15 @@ Registered as a completion widget via `zle -C _zcm-apply complete-word _zcm-appl
 
 For each selected candidate:
 
-1. Find matching entry in `_zcm_compcap`
+1. Read the selected row's stable `candidate_id`
+1. Look up the captured candidate by id
 1. Unpack metadata into an associative array
 1. Restore `PREFIX`, `SUFFIX`, `IPREFIX`, `ISUFFIX` to captured values
 1. Call `builtin compadd` with original args + selected word
 
 This lets zsh's own insertion machinery handle quoting, suffix management, and
-prefix/suffix complexity correctly.
+prefix/suffix complexity correctly. Duplicate display strings and duplicate words
+are supported because selection is id-based.
 
 ### 1.5 Edge Cases
 
@@ -115,7 +144,6 @@ prefix/suffix complexity correctly.
 | No matches          | Skip popup, let zsh show its "no matches" warning          |
 | Single match        | Auto-insert without showing popup                          |
 | Unambiguous prefix  | Insert common prefix, show popup on next Tab               |
-| Directory descent   | Accept selection, re-trigger completion (loop in widget)    |
 | Approximate matches | Strip `(#a1)` glob flags from PREFIX, add `-U` flag        |
 
 ### 1.6 Suppressing Built-in menu-select
@@ -127,7 +155,15 @@ compstate[list]=
 compstate[insert]=
 ```
 
-This prevents zsh's built-in completion display from activating.
+This is the intended mechanism for preventing zsh's built-in completion display
+from activating while still letting normal completion generation proceed.
+
+This behavior must be validated against:
+
+- no matches
+- single match
+- unambiguous prefix insertion
+- repeated Tab presses with multiple matches
 
 ---
 
@@ -135,11 +171,20 @@ This prevents zsh's built-in completion display from activating.
 
 ### 2.1 Popup Positioning
 
-**Content alignment**: the first character of menu content aligns horizontally
-with the insertion point on the command line (the start of the word being
-completed). The border `│` and its padding sit one column to the left.
+**Horizontal anchor**:
 
-**Vertical**: query cursor position via Device Status Report (`\e[6n`).
+- The first character of popup content aligns with the insertion point on the
+  command line, meaning the start of the word being completed.
+- The left border sits one column to the left of the content.
+
+**Cursor position source**:
+
+- Primary approach: query the terminal with Device Status Report (DSR) via
+  `\e[6n` and parse the returned `row;col`.
+- DSR is a feasibility checkpoint for v1 because terminal reads inside ZLE and
+  tmux may be timing-sensitive.
+
+**Vertical placement**:
 
 ```text
 space_below = LINES - cursor_row
@@ -153,22 +198,28 @@ else:
     pick larger region, clamp menu_height, enable scrolling
 ```
 
-**Horizontal overflow**: if the popup would exceed `$COLUMNS`, shift it left
-until the right border fits. Content alignment is best-effort in this case.
+**Horizontal overflow**:
+
+- If the popup would exceed `$COLUMNS`, shift it left until the right border fits.
+- In overflow cases, content alignment is best-effort rather than exact.
+
+**Fallback**:
+
+- If DSR fails or times out for an invocation, skip popup rendering and fall
+  back to normal completion behavior for that keypress.
 
 ### 2.2 Layout
 
-**Width**: determined by longest candidate + description + padding + borders.
-Clamped to `COLUMNS`.
+**Layout**: single-column only in v1.
 
-**Height**: `min(total_rows, MAX_VISIBLE)` + borders + optional status line.
-`MAX_VISIBLE` defaults to 16.
+**Width**: determined by the longest visible row content plus padding and
+borders. Clamped to `COLUMNS`.
 
-**Columns**: single-column when descriptions are present. Multi-column (auto-fit)
-when descriptions are absent.
+**Height**: `min(total_rows, MAX_VISIBLE)` plus borders and an optional status
+line. `MAX_VISIBLE` defaults to 16.
 
-**Description alignment**: right-aligned within the row, rendered in dim text
-(`\e[2m`).
+**Descriptions**: when present, render them right-aligned in dim text within the
+single column.
 
 ### 2.3 Group Dividers
 
@@ -193,19 +244,26 @@ only one group (or no groups), no divider is shown.
 
 ### 2.4 Rendering Pipeline
 
-Three-stage pipeline, all output collected into a single buffer before printing:
+All output is collected into a single buffer before printing.
 
-1. **Box chrome**: draw border characters at computed position
-1. **Content fill**: write candidates into content cells with list-colors applied
-1. **Selection highlight**: red foreground (`\e[31m`) on the selected item
+Initial render:
+
+1. Draw border and dividers
+1. Draw visible candidate rows
+1. Draw status line if needed
+1. Apply selected-row highlight with red foreground
+
+Redraw behavior:
+
+- Selection movement repaints only the previously selected row, the newly
+  selected row, ghost text, and status line if needed
+- Filter changes trigger a full popup content redraw within the existing frame
 
 **Flicker mitigation**:
 
 - Hide cursor (`\e[?25l`) before rendering, show after (`\e[?25h`)
 - Never clear the full screen; only overwrite specific cells
-- Batch all escape sequences into one `printf '%b'` call
-- Differential redraw: on selection movement, only repaint the old and new
-  selection rows
+- Batch all escape sequences into one `printf '%b'` call when practical
 
 ### 2.5 Scroll Indicators
 
@@ -214,6 +272,7 @@ When the candidate list exceeds the visible viewport:
 - `▲` centered in the top border when content exists above
 - `▼` in the status line when content exists below
 - Status line shows `[selected/total]` right-aligned
+- When filtering is active, the status line shows `filter: ...` before the count
 
 ```text
 ╭──────────── ▲ ───────────╮
@@ -232,18 +291,19 @@ handler widgets, then enter `zle recursive-edit`.
 | Key                      | Action                                              |
 | ------------------------ | --------------------------------------------------- |
 | `Up` / `Down`            | Move selection, scroll if needed                    |
-| `Left` / `Right`         | Column navigation (multi-column) or no-op           |
-| `Tab`                    | Cycle forward through candidates                    |
+| `Tab`                    | Cycle forward through selectable candidates         |
 | `Shift-Tab`              | Cycle backward                                      |
 | `Enter`                  | Accept selected candidate                           |
 | `Escape`                 | Cancel (dismiss popup, no insertion)                 |
-| `Ctrl-O`                 | Accept and infer next (directory descent)            |
 | Printable characters     | Append to filter, refilter candidates, reset to top  |
 | `Backspace`              | Delete last filter character                        |
 
 Both accept and cancel exit recursive-edit via `zle send-break`, differentiating
 through the `_zcm_state` variable. This avoids accidentally executing the command
 line (which `accept-line` would do).
+
+While the popup is open, printable keys are consumed by the popup filter and do
+not modify the real command line buffer.
 
 ### 2.7 Type-to-Filter
 
@@ -257,48 +317,60 @@ Typing narrows the candidate list via case-insensitive substring matching.
 
 ### 2.8 Ghost Text Preview
 
-While the popup is open, the selected candidate's completion suffix is shown
-as dim text after the cursor on the command line, using `$POSTDISPLAY`.
+On popup open:
+
+- Save the current value of `$POSTDISPLAY`
+
+While the popup is open, the selected candidate's completion suffix is shown as
+dim text after the cursor on the command line, using `$POSTDISPLAY`.
 
 - User typed `git re`, selection is `rebase`: ghost shows `base` after cursor
 - User typed `ls ` (empty prefix), selection is `src/`: ghost shows `src/`
 - On each selection change (arrow/tab), update `$POSTDISPLAY` and call `zle -R`
-- On cancel (Escape): clear `$POSTDISPLAY`; zsh-autosuggestions will reassert
-  its own suggestion via its `zle-line-pre-redraw` hook
-- On accept (Enter): clear `$POSTDISPLAY`; the real insertion happens via
-  `_zcm-apply`
 
-zsh-autosuggestions is suppressed during the popup by our ownership of
-`$POSTDISPLAY`. No explicit disable is needed; we simply overwrite the variable.
+On popup close:
+
+- Restore the saved `$POSTDISPLAY` value on both accept and cancel before exiting
+  the popup state
+
+This avoids permanently clobbering ghost text owned by other widgets or plugins.
 
 ### 2.9 Autosuggestion-Aware Initial Selection
 
 Before opening the popup, read `$POSTDISPLAY` to capture zsh-autosuggestions'
 current suggestion. Extract the next word (the completion target) and search the
-candidate list for a match. If found, set the initial selection index so the
-popup opens with that candidate highlighted and scrolled into view.
+candidate list for a match. Use the same normalization used for row rendering.
+If a single match is found, set the initial selection index so the popup opens
+with that candidate highlighted and scrolled into view.
 
-If no match is found (suggestion doesn't correspond to a completion candidate),
-fall back to selecting the first candidate.
+If no unambiguous match is found, fall back to selecting the first selectable
+candidate.
 
 ### 2.10 Screen Save and Restore
 
-Use `tmux capture-pane -p -e -S <start> -E <end>` to capture the screen region
-behind the popup with ANSI color escape sequences preserved. On popup close,
-restore by writing captured lines back to the same positions.
+Use `tmux capture-pane -p -e -S <start> -E <end>` to capture the rows behind the
+popup, preserving ANSI styling.
 
-### 2.11 list-colors Support
+On popup close:
 
-Read colors from `zstyle ':completion:*:default' list-colors`, falling back to
-`$LS_COLORS`. Parse into two maps:
+1. For each captured screen row, move the cursor to that row's left edge
+1. Reprint the preserved line content for that row
+1. Redraw the prompt line as needed via `zle -R`
 
-- **Mode-based**: `di`, `ln`, `ex`, `so`, `pi`, `bd`, `cd`, `su`, `sg`, `tw`, `ow`
-- **Extension-based**: `*.zsh=...`, `*.tar.gz=...`
+Notes:
 
-For file-type candidates (those with `realdir` metadata), resolve colors by
-statting the file and matching mode, then falling back to extension matching.
+- v1 assumes restore is row-based, not a full framebuffer reconstruction
+- Wrapped lines and wide characters must be tested carefully
+- If exact restore proves unreliable for a case, prefer falling back to a prompt
+  redraw rather than leaving visual corruption
 
-Selected item highlight (red fg) overrides list-colors for the selected row.
+### 2.11 Color Model
+
+v1 uses terminal default colors for all non-selected rows and a red foreground
+for the selected row, matching tmux menu styling.
+
+Support for `list-colors`, `$LS_COLORS`, and file-type-specific colorization is
+deferred.
 
 ---
 
@@ -314,16 +386,14 @@ zsh-completion-menu/
     -zcm-compadd.zsh                # compadd wrapper (candidate capture)
     -zcm-complete.zsh               # hooked _main_complete replacement
     -zcm-apply.zsh                  # selection insertion completion widget
-    -zcm-generate-complist.zsh      # candidate processing, colorizing, grouping
+    -zcm-generate-complist.zsh      # candidate processing and grouping
     position.zsh                    # cursor query (DSR), popup placement algorithm
-    layout.zsh                      # width/height/column calculation
     render.zsh                      # box drawing, content filling, differential redraw
     navigate.zsh                    # state machine, selection movement, scroll
     keymap.zsh                      # temporary keymap, handler widgets, recursive-edit
     filter.zsh                      # type-to-filter logic
     screen.zsh                      # screen save/restore (tmux capture-pane)
     ghost.zsh                       # $POSTDISPLAY management, autosuggestion read
-    colors.zsh                      # list-colors parsing, LS_COLORS, color lookup
 ```
 
 ---
@@ -341,8 +411,12 @@ zsh-completion-menu/
 1. **tmux-only**: uses `tmux capture-pane` for pixel-perfect screen save/restore;
    non-tmux support deferred (would require `zle reset-prompt` fallback with
    imperfect restore of content above the prompt)
+1. **Stable candidate ids**: selection and apply are keyed by captured candidate
+   id, not display text, so duplicate labels are handled correctly
 1. **Content-aligned positioning**: menu text aligns with the insertion point on
    the command line, not the cursor or border edge
+1. **DSR with safe fallback**: exact popup placement uses DSR when available; if
+   it fails for an invocation, fall back to normal completion behavior
 1. **Group dividers over group headers**: tmux-style `├───┤` separators between
    groups; no label text, keeping the menu compact
 1. **Ghost text via $POSTDISPLAY**: shows selected candidate suffix as dim text
@@ -367,49 +441,49 @@ zsh-completion-menu/
 | tmux capture-pane coordinate mismatch         | Verify `pane_height` vs `$LINES`, adjust for status bars         |
 | recursive-edit + send-break side effects      | Test thoroughly; this is the approach fzf-tab validates          |
 | Performance with 1000+ candidates             | Only render visible rows (max 16); O(n) filter is fast enough    |
-| $POSTDISPLAY conflicts with autosuggestions   | We own $POSTDISPLAY during popup; autosuggestions reasserts on close via its zle-line-pre-redraw hook |
-| Autosuggestion word extraction is ambiguous   | Simple first-word extraction from $POSTDISPLAY; fall back to first candidate on failure |
+| $POSTDISPLAY conflicts with other widgets     | Save and restore the pre-popup value on all exits                |
+| Autosuggestion word extraction is ambiguous   | Fall back to first selectable candidate on no match or multi-match |
 
 ---
 
 ## 6. Verification Plan
 
-### Manual Testing
+### Must-Pass Manual Testing
 
-1. **Basic file completion**: `ls <Tab>` in a directory with mixed file types.
-   Verify popup content aligns with insertion point, rounded borders, file-type
-   colors from list-colors, red highlight on selected item.
-1. **Ghost text**: while popup is open, verify dim suffix text appears after
-   cursor. Navigate with arrows; ghost text updates to match selection.
-1. **Autosuggestion pre-selection**: type `git ` with zsh-autosuggestions showing
-   a history suggestion (e.g., `commit`). Press Tab. Verify the popup opens with
-   `commit` highlighted instead of the first item.
-1. **Command completion with descriptions**: `git <Tab>`. Verify descriptions
-   are right-aligned and dimmed.
-1. **Group dividers**: `cd <Tab>` to see grouped directories. Verify `├───┤`
-   divider lines between groups, no label text, dividers are not selectable.
-1. **Type-to-filter**: open popup, type characters, verify list narrows. Backspace
-   to widen. Verify filter string shown in status line.
-1. **Scroll**: complete in a directory with many files. Verify scroll indicators
-   appear, viewport follows selection.
-1. **Above-cursor placement**: move prompt to bottom of terminal. Tab to complete.
-   Verify popup appears above the prompt line.
-1. **Screen restore**: complete, then cancel with Escape. Verify the terminal
-   content behind the popup is perfectly restored (tmux capture-pane).
-1. **Autosuggestion restore on cancel**: after Escape, verify zsh-autosuggestions
-   resumes showing its ghost text.
-1. **Directory descent**: complete a directory name, press Ctrl-O, verify
-   completion continues inside that directory.
+1. **Basic file completion**: `ls <Tab>` in a directory with mixed file names.
+   Verify popup content aligns with insertion point, rounded borders, default
+   colors, and red highlight on selected item.
 1. **Single match**: complete an unambiguous prefix. Verify auto-insertion without
    popup.
-1. **Content alignment**: complete after a long path (`cat src/components/<Tab>`).
-   Verify menu content aligns with the character after the last `/`.
+1. **No matches**: complete a missing target. Verify no popup appears and zsh's
+   normal warning is shown.
+1. **Navigation**: verify `Up`, `Down`, `Tab`, and `Shift-Tab` move selection
+   correctly and skip non-selectable divider rows.
+1. **Accept**: press `Enter`. Verify the selected item is inserted correctly.
+1. **Cancel and restore**: press `Escape`. Verify the popup disappears and the
+   screen behind it is restored cleanly.
+1. **Ghost text**: while popup is open, verify dim suffix text appears after
+   cursor and updates as selection changes. On exit, verify prior `$POSTDISPLAY`
+   state is restored.
+1. **Autosuggestion pre-selection**: type `git ` with zsh-autosuggestions showing
+   a history suggestion (for example `commit`). Press Tab. Verify the popup opens
+   with `commit` highlighted instead of the first item.
+1. **Above-cursor placement**: move prompt to bottom of terminal. Tab to complete.
+   Verify popup appears above the prompt line.
+1. **Type-to-filter**: open popup, type characters, verify list narrows, status
+   line shows the filter, and the real command line buffer is unchanged.
 
-### Edge Cases
+### Extended / Stress Testing
 
-1. Cursor at column 1: popup left-aligned, border at column 1
-1. Cursor near right edge: popup shifts left to stay within terminal
-1. Very long candidate names: truncated to fit terminal width
-1. Empty completion list: no popup, zsh's "no matches" message shown
-1. Rapid arrow key presses: no visual artifacts or input lag
-1. Autosuggestion has no suggestion: popup opens with first candidate selected
+1. **Group dividers**: `cd <Tab>` to see grouped directories. Verify `├───┤`
+   divider lines between groups, no label text, dividers are not selectable.
+1. **Scroll**: complete in a directory with many files. Verify scroll indicators
+   appear and the viewport follows selection.
+1. **Cursor at column 1**: popup left-aligned, border at column 1.
+1. **Cursor near right edge**: popup shifts left to stay within terminal.
+1. **Very long candidate names**: rows truncate safely to fit terminal width.
+1. **Rapid key presses**: repeated navigation does not leave visual artifacts or
+   produce input lag.
+1. **Wrapped lines and wide characters**: verify restore behavior remains correct.
+1. **Autosuggestion has no suggestion**: popup opens with first selectable
+   candidate selected.
