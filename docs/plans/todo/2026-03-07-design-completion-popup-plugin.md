@@ -55,7 +55,8 @@ Tab press
     -> set ghost text ($POSTDISPLAY) for selected candidate
     -> recursive-edit (navigation loop)
     -> restore screen, restore ghost text
-    -> _zcm-apply (insert selected match)
+    -> if accepted: _zcm-apply (insert selected match)
+    -> if cancelled: no insertion, line unchanged
 ```
 
 ---
@@ -71,7 +72,8 @@ On plugin load (`zcm-enable`):
 1. Bind Tab to `zcm-complete` in both emacs and viins keymaps
 1. Hook `compadd` by replacing it with `-zcm-compadd`
 1. Hook `_main_complete` by wrapping it with `-zcm-complete`
-1. Set `zstyle ':completion:*' list-grouped false` (handle grouping ourselves)
+1. Save and set `zstyle ':completion:*' list-grouped false` (handle grouping
+   ourselves; the original value is restored by `zcm-disable`)
 
 ### 1.2 compadd Wrapper (`-zcm-compadd`)
 
@@ -176,6 +178,10 @@ This behavior must be validated against:
 - The first character of popup content aligns with the insertion point on the
   command line, meaning the start of the word being completed.
 - The left border sits one column to the left of the content.
+- The insertion point column is derived from the DSR cursor column minus the
+  display width of the current completion prefix (the text between the start of
+  the word and the cursor). In zle terms: `cursor_col - ${(m)#PREFIX}`. This
+  accounts for multi-byte and wide characters via the `(m)` flag.
 
 **Cursor position source**:
 
@@ -263,7 +269,7 @@ Redraw behavior:
 
 - Hide cursor (`\e[?25l`) before rendering, show after (`\e[?25h`)
 - Never clear the full screen; only overwrite specific cells
-- Batch all escape sequences into one `printf '%b'` call when practical
+- Batch all escape sequences into one `printf '%b'` call per render pass
 
 ### 2.5 Scroll Indicators
 
@@ -302,8 +308,25 @@ Both accept and cancel exit recursive-edit via `zle send-break`, differentiating
 through the `_zcm_state` variable. This avoids accidentally executing the command
 line (which `accept-line` would do).
 
-While the popup is open, printable keys are consumed by the popup filter and do
-not modify the real command line buffer.
+While the popup is open, printable keys (including space) are consumed by the
+popup filter and do not modify the real command line buffer.
+
+**Cleanup guarantees**:
+
+On any exit from recursive-edit (accept, cancel, or interrupt):
+
+1. Restore saved screen region
+1. Restore saved `$POSTDISPLAY`
+1. Remove temporary keymap
+1. Show cursor (`\e[?25h`)
+
+If `SIGINT` (Ctrl-C) exits recursive-edit, treat it as a cancel: run the same
+cleanup sequence, insert nothing.
+
+If `SIGWINCH` (terminal resize) occurs during the popup, dismiss the popup
+immediately: run the cleanup sequence and fall back to `zle reset-prompt` to
+redraw cleanly at the new terminal dimensions. Do not attempt to resize or
+reposition the popup in v1.
 
 ### 2.7 Type-to-Filter
 
@@ -396,6 +419,12 @@ zsh-completion-menu/
     ghost.zsh                       # $POSTDISPLAY management, autosuggestion read
 ```
 
+**Loading strategy**: all `lib/` files are sourced eagerly by the plugin entry
+point. The interception layer files must be loaded at plugin init time since they
+install hooks. The presentation layer files could be lazy-loaded on first Tab
+press if startup time proves to be a concern, but eager loading is simpler and
+sufficient for v1.
+
 ---
 
 ## 4. Key Design Decisions
@@ -443,6 +472,10 @@ zsh-completion-menu/
 | Performance with 1000+ candidates             | Only render visible rows (max 16); O(n) filter is fast enough    |
 | $POSTDISPLAY conflicts with other widgets     | Save and restore the pre-popup value on all exits                |
 | Autosuggestion word extraction is ambiguous   | Fall back to first selectable candidate on no match or multi-match |
+| SIGINT during popup leaves artifacts           | Treat as cancel; run full cleanup sequence on all exit paths       |
+| Terminal resize during popup                   | Dismiss popup, run cleanup, fall back to `zle reset-prompt`        |
+| Conflict with zsh-syntax-highlighting          | Syntax highlighting hooks into `zle-line-pre-redraw`; test that popup rendering and screen restore are not disrupted by highlight redraws |
+| Conflict with zsh-vi-mode                      | vi-mode manipulates keymaps; test that the temporary `_zcm_menu` keymap is not clobbered or leaked |
 
 ---
 
@@ -453,6 +486,8 @@ zsh-completion-menu/
 1. **Basic file completion**: `ls <Tab>` in a directory with mixed file names.
    Verify popup content aligns with insertion point, rounded borders, default
    colors, and red highlight on selected item.
+1. **Descriptions**: `git <Tab>`. Verify descriptions are right-aligned and
+   rendered in dim text within the single-column layout.
 1. **Single match**: complete an unambiguous prefix. Verify auto-insertion without
    popup.
 1. **No matches**: complete a missing target. Verify no popup appears and zsh's
