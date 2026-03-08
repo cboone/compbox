@@ -141,9 +141,9 @@ Tests ghost/suggestion functions (`lib/ghost.zsh`).
 
 - `ghost-read-suggestion` returns 1 on empty POSTDISPLAY
 - `ghost-read-suggestion` extracts first word
-- `ghost-read-suggestion` strips ANSI escape sequences
+- `ghost-read-suggestion` strips SGR style sequences (`\e[...m`)
 - `ghost-read-suggestion` handles single word
-- `ghost-read-suggestion` handles complex ANSI sequences
+- `ghost-read-suggestion` handles stacked SGR style sequences
 - `ghost-find-suggestion-match` with unique match returns index
 - `ghost-find-suggestion-match` returns 1 with no match
 - `ghost-find-suggestion-match` returns 1 on ambiguous (2+) matches
