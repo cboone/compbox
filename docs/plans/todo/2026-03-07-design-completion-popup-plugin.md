@@ -143,12 +143,12 @@ are supported because selection is id-based.
 
 ### 1.5 Edge Cases
 
-| Case                | Behavior                                                   |
-| ------------------- | ---------------------------------------------------------- |
-| No matches          | Skip popup, let zsh show its "no matches" warning          |
-| Single match        | Auto-insert without showing popup                          |
-| Unambiguous prefix  | Insert common prefix, show popup on next Tab               |
-| Approximate matches | Strip `(#a1)` glob flags from PREFIX, add `-U` flag        |
+| Case                | Behavior                                            |
+| ------------------- | --------------------------------------------------- |
+| No matches          | Skip popup, let zsh show its "no matches" warning   |
+| Single match        | Auto-insert without showing popup                   |
+| Unambiguous prefix  | Insert common prefix, show popup on next Tab        |
+| Approximate matches | Strip `(#a1)` glob flags from PREFIX, add `-U` flag |
 
 ### 1.6 Suppressing Built-in menu-select
 
@@ -296,15 +296,15 @@ When the candidate list exceeds the visible viewport:
 Create a temporary keymap (`_cbx_menu`) with all navigation keys bound to
 handler widgets, then enter `zle recursive-edit`.
 
-| Key                      | Action                                              |
-| ------------------------ | --------------------------------------------------- |
-| `Up` / `Down`            | Move selection, scroll if needed                    |
-| `Tab`                    | Cycle forward through selectable candidates         |
-| `Shift-Tab`              | Cycle backward                                      |
-| `Enter`                  | Accept selected candidate                           |
-| `Escape`                 | Cancel (dismiss popup, no insertion)                 |
-| Printable characters     | Append to filter, refilter candidates, reset to top  |
-| `Backspace`              | Delete last filter character                        |
+| Key                  | Action                                              |
+| -------------------- | --------------------------------------------------- |
+| `Up` / `Down`        | Move selection, scroll if needed                    |
+| `Tab`                | Cycle forward through selectable candidates         |
+| `Shift-Tab`          | Cycle backward                                      |
+| `Enter`              | Accept selected candidate                           |
+| `Escape`             | Cancel (dismiss popup, no insertion)                |
+| Printable characters | Append to filter, refilter candidates, reset to top |
+| `Backspace`          | Delete last filter character                        |
 
 Both accept and cancel exit recursive-edit via `zle send-break`, differentiating
 through the `_cbx_state` variable. This avoids accidentally executing the command
@@ -350,7 +350,7 @@ While the popup is open, the selected candidate's completion suffix is shown as
 dim text after the cursor on the command line, using `$POSTDISPLAY`.
 
 - User typed `git re`, selection is `rebase`: ghost shows `base` after cursor
-- User typed `ls ` (empty prefix), selection is `src/`: ghost shows `src/`
+- User typed `ls` (empty prefix), selection is `src/`: ghost shows `src/`
 - On each selection change (arrow/tab), update `$POSTDISPLAY` and call `zle -R`
 
 On popup close:
@@ -465,19 +465,19 @@ sufficient for v1.
 
 ## 5. Risks and Mitigations
 
-| Risk                                         | Mitigation                                                       |
-| -------------------------------------------- | ---------------------------------------------------------------- |
-| DSR response corrupted by simultaneous input  | Read char-by-char with timeout; unlikely during widget execution |
-| Wide (CJK) characters break column alignment  | Use `${(m)#string}` for display width calculation                |
-| tmux capture-pane coordinate mismatch         | Verify `pane_height` vs `$LINES`, adjust for status bars         |
-| recursive-edit + send-break side effects      | Test thoroughly; this is the approach fzf-tab validates          |
-| Performance with 1000+ candidates             | Only render visible rows (max 16); O(n) filter is fast enough    |
-| $POSTDISPLAY conflicts with other widgets     | Save and restore the pre-popup value on all exits                |
-| Autosuggestion word extraction is ambiguous   | Fall back to first selectable candidate on no match or multi-match |
-| SIGINT during popup leaves artifacts           | Treat as cancel; run full cleanup sequence on all exit paths       |
-| Terminal resize during popup                   | Dismiss popup, run cleanup, fall back to `zle reset-prompt`        |
-| Conflict with zsh-syntax-highlighting          | Syntax highlighting hooks into `zle-line-pre-redraw`; test that popup rendering and screen restore are not disrupted by highlight redraws |
-| Conflict with zsh-vi-mode                      | vi-mode manipulates keymaps; test that the temporary `_cbx_menu` keymap is not clobbered or leaked |
+| Risk                                         | Mitigation                                                                                                                                |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| DSR response corrupted by simultaneous input | Read char-by-char with timeout; unlikely during widget execution                                                                          |
+| Wide (CJK) characters break column alignment | Use `${(m)#string}` for display width calculation                                                                                         |
+| tmux capture-pane coordinate mismatch        | Verify `pane_height` vs `$LINES`, adjust for status bars                                                                                  |
+| recursive-edit + send-break side effects     | Test thoroughly; this is the approach fzf-tab validates                                                                                   |
+| Performance with 1000+ candidates            | Only render visible rows (max 16); O(n) filter is fast enough                                                                             |
+| $POSTDISPLAY conflicts with other widgets    | Save and restore the pre-popup value on all exits                                                                                         |
+| Autosuggestion word extraction is ambiguous  | Fall back to first selectable candidate on no match or multi-match                                                                        |
+| SIGINT during popup leaves artifacts         | Treat as cancel; run full cleanup sequence on all exit paths                                                                              |
+| Terminal resize during popup                 | Dismiss popup, run cleanup, fall back to `zle reset-prompt`                                                                               |
+| Conflict with zsh-syntax-highlighting        | Syntax highlighting hooks into `zle-line-pre-redraw`; test that popup rendering and screen restore are not disrupted by highlight redraws |
+| Conflict with zsh-vi-mode                    | vi-mode manipulates keymaps; test that the temporary `_cbx_menu` keymap is not clobbered or leaked                                        |
 
 ---
 
@@ -502,7 +502,7 @@ sufficient for v1.
 1. **Ghost text**: while popup is open, verify dim suffix text appears after
    cursor and updates as selection changes. On exit, verify prior `$POSTDISPLAY`
    state is restored.
-1. **Autosuggestion pre-selection**: type `git ` with zsh-autosuggestions showing
+1. **Autosuggestion pre-selection**: type `git` with zsh-autosuggestions showing
    a history suggestion (for example `commit`). Press Tab. Verify the popup opens
    with `commit` highlighted instead of the first item.
 1. **Above-cursor placement**: move prompt to bottom of terminal. Tab to complete.
