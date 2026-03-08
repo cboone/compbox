@@ -7,13 +7,13 @@ function -cbx-screen-save() {
   local -i start_row="${1}"
   local -i end_row="${2}"
 
-  # Convert to tmux pane coordinates (0-based, relative to pane top)
-  # tmux uses negative numbers for the visible area from the bottom
+  # Convert visible terminal rows into tmux pane coordinates.
+  # The visible pane is addressed with negative offsets from the bottom.
   local -i pane_height
   pane_height=$(tmux display-message -p '#{pane_height}')
 
-  local -i tmux_start=$(( start_row - 1 ))
-  local -i tmux_end=$(( end_row - 1 ))
+  local -i tmux_start=$(( start_row - pane_height - 1 ))
+  local -i tmux_end=$(( end_row - pane_height - 1 ))
 
   # Capture the rows with ANSI styling preserved
   typeset -ga _cbx_saved_screen=()
