@@ -7,7 +7,6 @@ function -cbx-generate-complist() {
   local -a raw_candidates=("${_cbx_compcap[@]}")
 
   # Reset visible rows
-  typeset -ga _cbx_visible_rows=()
   typeset -ga _cbx_row_ids=()
   typeset -ga _cbx_row_kinds=()
   typeset -ga _cbx_row_texts=()
@@ -15,12 +14,9 @@ function -cbx-generate-complist() {
 
   (( ${#raw_candidates} )) || return 1
 
-  # Group candidates by their group name
-  local -A group_order
-  local -a group_names=()
-  local -a group_members
   local entry entry_id rest display meta
-  local -i order_idx=0
+  local prev_group=""
+  local -i seen_candidate=0
 
   for entry in "${raw_candidates[@]}"; do
     entry_id="${entry%%${_cbx_sep}*}"
@@ -28,90 +24,38 @@ function -cbx-generate-complist() {
     display="${rest%%${_cbx_sep}*}"
     meta="${rest#*${_cbx_sep}}"
 
-    # Extract group from metadata
-    local group=""
+    # Extract word, description, and group from metadata
+    local word="" desc="" group=""
     local -a parts
     parts=("${(@s:\x00:)meta}")
     local -i pidx
     for (( pidx=1; pidx < ${#parts}; pidx += 2 )); do
-      [[ "${parts[${pidx}]}" == "group" ]] && group="${parts[$(( pidx + 1 ))]}"
+      case "${parts[${pidx}]}" in
+        word)  word="${parts[$(( pidx + 1 ))]}" ;;
+        desc)  desc="${parts[$(( pidx + 1 ))]}" ;;
+        group) group="${parts[$(( pidx + 1 ))]}" ;;
+      esac
     done
 
-    # Track group ordering
-    if [[ -z "${group_order[(i)${group}]+set}" ]] || \
-       (( ${group_order[(i)${group}]} == 0 )); then
-      if [[ -z "${group_order[${group}]+exists}" ]]; then
-        (( order_idx++ ))
-        group_order[${group}]=${order_idx}
-        group_names+=("${group}")
-      fi
+    # Insert divider when group changes (after at least one candidate)
+    if (( seen_candidate )) && [[ "${group}" != "${prev_group}" ]]; then
+      _cbx_row_ids+=("0")
+      _cbx_row_kinds+=("divider")
+      _cbx_row_texts+=("")
+      _cbx_row_descriptions+=("")
     fi
-
-    # Extract word and description from metadata.
-    local word="" desc=""
-    for (( pidx=1; pidx < ${#parts}; pidx += 2 )); do
-      [[ "${parts[${pidx}]}" == "word" ]] && word="${parts[$(( pidx + 1 ))]}"
-      [[ "${parts[${pidx}]}" == "desc" ]] && desc="${parts[$(( pidx + 1 ))]}"
-    done
 
     # Use word as display if display is empty
     [[ -z "${display}" ]] && display="${word}"
 
-    # Build row data
-    _cbx_visible_rows+=("${entry_id}:candidate:${display}")
     _cbx_row_ids+=("${entry_id}")
     _cbx_row_kinds+=("candidate")
     _cbx_row_texts+=("${display}")
     _cbx_row_descriptions+=("${desc}")
+
+    prev_group="${group}"
+    seen_candidate=1
   done
-
-  # Insert group dividers between different groups if multiple groups exist
-  if (( ${#group_names} > 1 )); then
-    local -a new_ids=() new_kinds=() new_texts=() new_descs=()
-    local current_group="" prev_group=""
-
-    for entry in "${raw_candidates[@]}"; do
-      entry_id="${entry%%${_cbx_sep}*}"
-      rest="${entry#*${_cbx_sep}}"
-      display="${rest%%${_cbx_sep}*}"
-      meta="${rest#*${_cbx_sep}}"
-
-      local group=""
-      local -a parts
-      parts=("${(@s:\x00:)meta}")
-      local -i pidx
-      for (( pidx=1; pidx < ${#parts}; pidx += 2 )); do
-        [[ "${parts[${pidx}]}" == "group" ]] && group="${parts[$(( pidx + 1 ))]}"
-      done
-
-      local word="" desc=""
-      for (( pidx=1; pidx < ${#parts}; pidx += 2 )); do
-        [[ "${parts[${pidx}]}" == "word" ]] && word="${parts[$(( pidx + 1 ))]}"
-        [[ "${parts[${pidx}]}" == "desc" ]] && desc="${parts[$(( pidx + 1 ))]}"
-      done
-      [[ -z "${display}" ]] && display="${word}"
-
-      # Insert divider when group changes
-      if [[ -n "${prev_group}" && "${group}" != "${prev_group}" ]]; then
-        new_ids+=("0")
-        new_kinds+=("divider")
-        new_texts+=("")
-        new_descs+=("")
-      fi
-
-      new_ids+=("${entry_id}")
-      new_kinds+=("candidate")
-      new_texts+=("${display}")
-      new_descs+=("${desc}")
-
-      prev_group="${group}"
-    done
-
-    _cbx_row_ids=("${new_ids[@]}")
-    _cbx_row_kinds=("${new_kinds[@]}")
-    _cbx_row_texts=("${new_texts[@]}")
-    _cbx_row_descriptions=("${new_descs[@]}")
-  fi
 
   return 0
 }
