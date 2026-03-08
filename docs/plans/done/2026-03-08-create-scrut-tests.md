@@ -199,26 +199,26 @@ status-line behavior must explicitly set or leave unset `_cbx_filter_string`.
 
 ## Files to Create
 
-| File | Purpose |
-| --- | --- |
-| `tests/helpers/setup.zsh` | Test bootstrap: source libs, stubs, helpers |
-| `tests/generate-complist.md` | `-cbx-generate-complist` tests |
-| `tests/navigate.md` | Navigation state machine tests |
-| `tests/filter.md` | Type-to-filter tests |
-| `tests/ghost.md` | Ghost text and suggestion matching tests |
-| `tests/position.md` | Popup positioning tests |
-| `tests/render-dimensions.md` | Dimension computation tests |
+| File                         | Purpose                                     |
+| ---------------------------- | ------------------------------------------- |
+| `tests/helpers/setup.zsh`    | Test bootstrap: source libs, stubs, helpers |
+| `tests/generate-complist.md` | `-cbx-generate-complist` tests              |
+| `tests/navigate.md`          | Navigation state machine tests              |
+| `tests/filter.md`            | Type-to-filter tests                        |
+| `tests/ghost.md`             | Ghost text and suggestion matching tests    |
+| `tests/position.md`          | Popup positioning tests                     |
+| `tests/render-dimensions.md` | Dimension computation tests                 |
 
 ## Files to Modify
 
-| File                        | Change                                                                            |
-| --------------------------- | --------------------------------------------------------------------------------- |
-| `CONTRIBUTING.md`           | Document local `scrut` installation with `cargo install --locked scrut`           |
-| `Makefile`                  | Add `test` to `.PHONY` and add `test` target: `scrut test --shell zsh tests/*.md` |
-| `.prettierignore`           | Add `tests/` (scrut markdown not Prettier-compatible)                             |
-| `.markdownlint-cli2.jsonc`  | Add `tests/**` to ignores                                                         |
-| `cspell.json`               | Add test-related words (`scrut`, `testdir`, etc.)                                 |
-| `.github/workflows/ci.yml`  | Add `test` job that installs zsh, Rust, and `scrut`, then runs `make test`        |
+| File                       | Change                                                                            |
+| -------------------------- | --------------------------------------------------------------------------------- |
+| `CONTRIBUTING.md`          | Document local `scrut` installation with `cargo install --locked scrut`           |
+| `Makefile`                 | Add `test` to `.PHONY` and add `test` target: `scrut test --shell zsh tests/*.md` |
+| `.prettierignore`          | Add `tests/` (scrut markdown not Prettier-compatible)                             |
+| `.markdownlint-cli2.jsonc` | Add `tests/**` to ignores                                                         |
+| `cspell.json`              | Add test-related words (`scrut`, `testdir`, etc.)                                 |
+| `.github/workflows/ci.yml` | Add `test` job that installs zsh, Rust, and `scrut`, then runs `make test`        |
 
 ## Key Design Decisions
 
