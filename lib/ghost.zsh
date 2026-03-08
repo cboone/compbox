@@ -33,6 +33,7 @@ function -cbx-ghost-update() {
 # Read the current autosuggestion and extract the next word for initial
 # selection matching
 function -cbx-ghost-read-suggestion() {
+  setopt localoptions EXTENDED_GLOB
   local postdisplay="${POSTDISPLAY}"
 
   # If POSTDISPLAY is empty, no suggestion available
@@ -43,7 +44,8 @@ function -cbx-ghost-read-suggestion() {
 
   # Strip ANSI escape sequences to get raw suggestion text
   local clean="${postdisplay}"
-  clean="${clean//\e\[[0-9;]*m/}"
+  local esc=$'\e'
+  clean="${clean//${esc}\[[0-9;]#m/}"
 
   # Extract the first word (the completion target)
   typeset -g _cbx_suggestion_word="${clean%%[[:space:]]*}"
