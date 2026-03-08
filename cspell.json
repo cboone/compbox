@@ -1,6 +1,6 @@
 {
   "version": "0.2",
   "language": "en",
-  "words": ["apre", "cboone", "compbox", "compadd", "compcap", "complist", "compsys", "compstate", "cooldown", "elif", "frontmatter", "hpre", "IPREFIX", "ISUFFIX", "keymap", "keymaps", "POSTDISPLAY", "realdir", "SIGWINCH", "viins", "zinit", "zplug", "zparseopts", "zpty", "zstyle"],
+  "words": ["apre", "cand", "cboone", "compbox", "compadd", "compcap", "complist", "compsys", "compstate", "cooldown", "descs", "dscr", "elif", "frontmatter", "hpre", "IPREFIX", "ISUFFIX", "keymap", "keymaps", "pidx", "POSTDISPLAY", "realdir", "SIGWINCH", "unfunction", "vidx", "viins", "wpre", "wsuf", "zinit", "zplug", "zparseopts", "zpty", "zstyle"],
   "ignorePaths": [".git", ".git/"]
 }
