@@ -187,8 +187,15 @@ function -cbx-render-row() {
 
   local -i avail=$(( _cbx_content_width - 2 ))
   if [[ -n "${desc}" ]]; then
-    avail=$(( avail - ${(m)#desc} - 2 ))
+    local -i desc_width=${(m)#desc}
+    local -i desc_budget=$(( avail - 2 ))
+    if (( desc_width > desc_budget )); then
+      desc="${desc[1,${desc_budget}]}"
+      desc_width=${desc_budget}
+    fi
+    avail=$(( avail - desc_width - 2 ))
   fi
+  (( avail < 0 )) && avail=0
   if (( text_display_width > avail )); then
     text="${text[1,${avail}]}"
     text_display_width=${avail}

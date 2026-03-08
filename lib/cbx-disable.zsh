@@ -22,6 +22,7 @@ function cbx-disable() {
 
   # Remove our widgets
   zle -D cbx-complete 2>/dev/null
+  zle -D _cbx-apply 2>/dev/null
 
   # Remove the compadd wrapper
   unfunction compadd 2>/dev/null
