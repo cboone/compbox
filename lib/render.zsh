@@ -64,130 +64,37 @@ function -cbx-render-full() {
   # Hide cursor
   buf+="\e[?25l"
 
-  local -i row=${_cbx_popup_row}
   local -i col=${_cbx_border_col}
-  local -i width=${_cbx_popup_width}
   local -i content_w=${_cbx_content_width}
 
-  # Check if we need scroll-up indicator
-  local has_above=0 has_below=0
-  (( _cbx_viewport_start > 1 )) && has_above=1
-  (( _cbx_viewport_start + _cbx_visible_count - 1 < ${#_cbx_row_kinds} )) && has_below=1
-
   # Top border
-  buf+="\e[${row};${col}H"
-  if (( has_above )); then
-    # Insert scroll indicator centered in top border
-    local -i fill_width=$(( content_w - 3 ))
-    local -i left_fill=$(( fill_width / 2 ))
-    local -i right_fill=$(( fill_width - left_fill ))
-    buf+="${CBX_TL}"
-    local -i hi
-    for (( hi=0; hi < left_fill; hi++ )); do buf+="${CBX_H}"; done
-    buf+=" ${CBX_ARROW_UP} "
-    for (( hi=0; hi < right_fill; hi++ )); do buf+="${CBX_H}"; done
-    buf+="${CBX_TR}"
-  else
-    buf+="${CBX_TL}"
-    local -i hi
-    for (( hi=0; hi < content_w; hi++ )); do buf+="${CBX_H}"; done
-    buf+="${CBX_TR}"
-  fi
-  (( row++ ))
+  -cbx-render-top-border buf
 
   # Content rows
   local -i vidx
   for (( vidx=_cbx_viewport_start; vidx < _cbx_viewport_start + _cbx_visible_count; vidx++ )); do
-    buf+="\e[${row};${col}H"
-
     if (( vidx > ${#_cbx_row_kinds} )); then
-      # Empty row
-      buf+="${CBX_V}"
+      # Empty row (beyond data)
+      local -i empty_row=$(( _cbx_popup_row + 1 + vidx - _cbx_viewport_start ))
+      buf+="\e[${empty_row};${col}H${CBX_V}"
       -cbx-render-pad buf ${content_w}
       buf+="${CBX_V}"
-    elif [[ "${_cbx_row_kinds[${vidx}]}" == "divider" ]]; then
-      # Group divider
-      buf+="${CBX_ML}"
-      for (( hi=0; hi < content_w; hi++ )); do buf+="${CBX_H}"; done
-      buf+="${CBX_MR}"
     else
-      # Candidate row
-      local text="${_cbx_row_texts[${vidx}]}"
-      local desc="${_cbx_row_descriptions[${vidx}]}"
-      local -i text_display_width=${(m)#text}
-
-      # Truncate text if needed
-      local -i avail=$(( content_w - 2 ))
-      if [[ -n "${desc}" ]]; then
-        avail=$(( avail - ${(m)#desc} - 2 ))
-      fi
-      if (( text_display_width > avail )); then
-        # Simple truncation
-        text="${text[1,${avail}]}"
-        text_display_width=${avail}
-      fi
-
-      buf+="${CBX_V} "
-
-      if (( vidx == _cbx_selected_idx )); then
-        # Selected: red foreground
-        buf+="\e[31m${text}\e[0m"
-      else
-        buf+="${text}"
-      fi
-
-      # Right-align description if present
-      if [[ -n "${desc}" ]]; then
-        local -i desc_width=${(m)#desc}
-        local -i spaces=$(( content_w - 2 - text_display_width - desc_width ))
-        (( spaces < 1 )) && spaces=1
-        local -i si
-        for (( si=0; si < spaces; si++ )); do buf+=" "; done
-        if (( vidx == _cbx_selected_idx )); then
-          buf+="\e[2;31m${desc}\e[0m"
-        else
-          buf+="\e[2m${desc}\e[0m"
-        fi
-        buf+=" "
-      else
-        # Pad remaining space
-        local -i pad=$(( content_w - 1 - text_display_width ))
-        local -i si
-        for (( si=0; si < pad; si++ )); do buf+=" "; done
-      fi
-
-      buf+="${CBX_V}"
+      local -i is_sel=0
+      (( vidx == _cbx_selected_idx )) && is_sel=1
+      -cbx-render-row buf ${vidx} ${is_sel}
     fi
-
-    (( row++ ))
   done
 
   # Bottom border / status line
-  buf+="\e[${row};${col}H"
+  local has_below=0
+  (( _cbx_viewport_start + _cbx_visible_count - 1 < ${#_cbx_row_kinds} )) && has_below=1
   if (( has_below || _cbx_needs_status )); then
-    buf+="${CBX_BL} "
-    local status_text=""
-    if [[ -n "${_cbx_filter_string:-}" ]]; then
-      status_text+="filter: ${_cbx_filter_string}  "
-    fi
-    if (( has_below )); then
-      status_text+="${CBX_ARROW_DOWN}   "
-    fi
-
-    # Count for status
-    local -i selected_num
-    -cbx-render-selected-number
-    status_text+="[${selected_num}/${_cbx_total_candidates}]"
-
-    local -i status_width=${(m)#status_text}
-    local -i fill=$(( content_w - 2 - status_width ))
-    if (( fill > 0 )); then
-      local -i si
-      for (( si=0; si < fill; si++ )); do buf+=" "; done
-    fi
-    buf+="${status_text} ${CBX_BR}"
+    -cbx-render-status-line buf
   else
-    buf+="${CBX_BL}"
+    local -i bottom_row=$(( _cbx_popup_row + 1 + _cbx_visible_count ))
+    buf+="\e[${bottom_row};${col}H${CBX_BL}"
+    local -i hi
     for (( hi=0; hi < content_w; hi++ )); do buf+="${CBX_H}"; done
     buf+="${CBX_BR}"
   fi
