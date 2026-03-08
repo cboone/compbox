@@ -4,6 +4,11 @@
 # zsh's built-in completion display after candidates are collected.
 
 function -cbx-complete() {
+  if (( ${+CBX_BYPASS_CAPTURE} )); then
+    _cbx-orig-main-complete "$@"
+    return $?
+  fi
+
   # Enable capture mode
   typeset -g IN_CBX=1
   typeset -ga _cbx_compcap=()

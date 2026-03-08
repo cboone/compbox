@@ -37,8 +37,11 @@ function cbx-complete() {
 
   # Query cursor position via DSR
   if ! -cbx-query-cursor; then
-    # DSR failed: fall back to normal completion behavior
     -cbx-ghost-restore
+    typeset -g CBX_BYPASS_CAPTURE=1
+    _cbx_compcap=()
+    zle ".cbx-orig-${CBX_ORIG_WIDGET}"
+    unset CBX_BYPASS_CAPTURE
     return 0
   fi
 
