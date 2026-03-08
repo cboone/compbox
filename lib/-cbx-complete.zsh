@@ -10,7 +10,7 @@ function -cbx-complete() {
   typeset -gi _cbx_next_id=0
 
   # Run the original _main_complete
-  _main_complete "$@"
+  _cbx-orig-main-complete "$@"
   local ret=$?
 
   # Suppress built-in menu-select display

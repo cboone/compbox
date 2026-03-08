@@ -26,6 +26,12 @@ function cbx-disable() {
   # Remove the compadd wrapper
   unfunction compadd 2>/dev/null
 
+  # Restore the original _main_complete implementation
+  if (( ${+functions[_cbx-orig-main-complete]} )); then
+    functions[_main_complete]="${functions[_cbx-orig-main-complete]}"
+    unfunction _cbx-orig-main-complete 2>/dev/null
+  fi
+
   # Restore the list-grouped zstyle
   if [[ "${CBX_ORIG_LIST_GROUPED}" == "__unset__" ]]; then
     zstyle -d ':completion:*' list-grouped

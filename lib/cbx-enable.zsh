@@ -34,6 +34,12 @@ function cbx-enable() {
     -cbx-compadd "$@"
   }
 
+  # Wrap _main_complete so candidate capture mode is enabled during completion.
+  functions[_cbx-orig-main-complete]="${functions[_main_complete]}"
+  function _main_complete() {
+    -cbx-complete "$@"
+  }
+
   # Save the current list-grouped zstyle value, then disable it
   local current_grouped
   if zstyle -g current_grouped ':completion:*' list-grouped; then
