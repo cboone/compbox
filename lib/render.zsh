@@ -167,6 +167,20 @@ function -cbx-render-row() {
     return
   fi
 
+  if [[ "${_cbx_row_kinds[${vidx}]}" == "message" ]]; then
+    local msg="${_cbx_row_texts[${vidx}]}"
+    local -i msg_width=${(m)#msg}
+    local -i left_pad=$(( (_cbx_content_width - msg_width) / 2 ))
+    local -i right_pad=$(( _cbx_content_width - msg_width - left_pad ))
+    __buf+="\e[${row};${col}H${CBX_V}"
+    local -i si
+    for (( si=0; si < left_pad; si++ )); do __buf+=" "; done
+    __buf+="\e[2m${msg}\e[0m"
+    for (( si=0; si < right_pad; si++ )); do __buf+=" "; done
+    __buf+="${CBX_V}"
+    return
+  fi
+
   local text="${_cbx_row_texts[${vidx}]}"
   local desc="${_cbx_row_descriptions[${vidx}]}"
   local -i text_display_width=${(m)#text}

@@ -83,6 +83,14 @@ function -cbx-filter-apply() {
     [[ "${_cbx_row_kinds[${ci}]}" == "candidate" ]] && (( _cbx_total_candidates++ ))
   done
 
+  # Show a message when filter matches nothing
+  if (( _cbx_total_candidates == 0 )) && [[ -n "${_cbx_filter_string}" ]]; then
+    _cbx_row_ids=("0")
+    _cbx_row_kinds=("message")
+    _cbx_row_texts=("no matches")
+    _cbx_row_descriptions=("")
+  fi
+
   # Reset selection and viewport
   _cbx_viewport_start=1
   _cbx_selected_idx=0
