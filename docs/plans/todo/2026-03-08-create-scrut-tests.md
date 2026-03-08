@@ -179,7 +179,8 @@ Tests render computation functions (`lib/render.zsh`).
 `render-compute-dimensions` checks `${_cbx_filter_string:-}`, so tests for
 status-line behavior must explicitly set or leave unset `_cbx_filter_string`.
 
-- Width computed from longest row text (+ 2 padding + 2 borders)
+- Content width is `max_text_width + 2` (1-space pad each side); popup width
+  adds 2 border columns, giving `max_text_width + 4` total
 - Width accounts for descriptions (text + desc + 2 space gap)
 - Width clamped to COLUMNS
 - Visible count capped at `CBX_MAX_VISIBLE` (16)
