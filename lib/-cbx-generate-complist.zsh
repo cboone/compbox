@@ -47,18 +47,12 @@ function -cbx-generate-complist() {
       fi
     fi
 
-    # Extract word from metadata for display text
-    local word=""
+    # Extract word and description from metadata.
+    local word="" desc=""
     for (( pidx=1; pidx < ${#parts}; pidx += 2 )); do
       [[ "${parts[${pidx}]}" == "word" ]] && word="${parts[$(( pidx + 1 ))]}"
+      [[ "${parts[${pidx}]}" == "desc" ]] && desc="${parts[$(( pidx + 1 ))]}"
     done
-
-    # Parse description if display contains " -- " separator
-    local desc=""
-    if [[ "${display}" == *' -- '* ]]; then
-      desc="${display#* -- }"
-      display="${display%% -- *}"
-    fi
 
     # Use word as display if display is empty
     [[ -z "${display}" ]] && display="${word}"
@@ -90,16 +84,11 @@ function -cbx-generate-complist() {
         [[ "${parts[${pidx}]}" == "group" ]] && group="${parts[$(( pidx + 1 ))]}"
       done
 
-      local word=""
+      local word="" desc=""
       for (( pidx=1; pidx < ${#parts}; pidx += 2 )); do
         [[ "${parts[${pidx}]}" == "word" ]] && word="${parts[$(( pidx + 1 ))]}"
+        [[ "${parts[${pidx}]}" == "desc" ]] && desc="${parts[$(( pidx + 1 ))]}"
       done
-
-      local desc=""
-      if [[ "${display}" == *' -- '* ]]; then
-        desc="${display#* -- }"
-        display="${display%% -- *}"
-      fi
       [[ -z "${display}" ]] && display="${word}"
 
       # Insert divider when group changes

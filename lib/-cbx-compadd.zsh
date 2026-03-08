@@ -90,6 +90,7 @@ function -cbx-compadd() {
     # Pack metadata as NUL-delimited key-value pairs
     local meta=""
     meta+="word${_cbx_nul}${hit}"
+    meta+="${_cbx_nul}desc${_cbx_nul}${dscr_text}"
     meta+="${_cbx_nul}group${_cbx_nul}${group}"
     meta+="${_cbx_nul}PREFIX${_cbx_nul}${PREFIX}"
     meta+="${_cbx_nul}SUFFIX${_cbx_nul}${SUFFIX}"
@@ -103,7 +104,7 @@ function -cbx-compadd() {
     meta+="${_cbx_nul}args${_cbx_nul}${args_packed}"
 
     # Pack: id \x02 display \x02 metadata
-    _cbx_compcap+=("${_cbx_next_id}${_cbx_sep}${dscr_text:-${hit}}${_cbx_sep}${meta}")
+    _cbx_compcap+=("${_cbx_next_id}${_cbx_sep}${hit}${_cbx_sep}${meta}")
   done
 
   return ${ret}
