@@ -176,6 +176,8 @@ Tests position functions (`lib/position.zsh`).
 #### `tests/render-dimensions.md` (~14 tests)
 
 Tests render computation functions (`lib/render.zsh`).
+`render-compute-dimensions` checks `${_cbx_filter_string:-}`, so tests for
+status-line behavior must explicitly set or leave unset `_cbx_filter_string`.
 
 - Width computed from longest row text (+ 2 padding + 2 borders)
 - Width accounts for descriptions (text + desc + 2 space gap)
