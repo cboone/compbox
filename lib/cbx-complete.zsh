@@ -77,7 +77,14 @@ function cbx-complete() {
 
   # Save screen region behind popup
   local -i screen_end=$(( _cbx_popup_row + _cbx_popup_height - 1 ))
-  -cbx-screen-save ${_cbx_popup_row} ${screen_end}
+  if ! -cbx-screen-save ${_cbx_popup_row} ${screen_end}; then
+    -cbx-ghost-restore
+    typeset -g CBX_BYPASS_CAPTURE=1
+    _cbx_compcap=()
+    zle ".cbx-orig-${CBX_ORIG_WIDGET}"
+    unset CBX_BYPASS_CAPTURE
+    return 0
+  fi
 
   # Initial render
   -cbx-render-full
