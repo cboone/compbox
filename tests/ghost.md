@@ -10,6 +10,30 @@ $ source "$TESTDIR/helpers/setup.zsh"
 exit: 1
 ```
 
+## ghost-save preserves current POSTDISPLAY
+
+```scrut
+$ source "$TESTDIR/helpers/setup.zsh"
+> POSTDISPLAY="current ghost text"
+> -cbx-ghost-save
+> echo "saved: ${_cbx_saved_postdisplay}"
+saved: current ghost text
+```
+
+## ghost-restore resets POSTDISPLAY and clears saved value
+
+```scrut
+$ source "$TESTDIR/helpers/setup.zsh"
+> POSTDISPLAY="current ghost text"
+> -cbx-ghost-save
+> POSTDISPLAY="different text"
+> -cbx-ghost-restore
+> echo "post: ${POSTDISPLAY}"
+> echo "saved set: ${+_cbx_saved_postdisplay}"
+post: current ghost text
+saved set: 0
+```
+
 ## ghost-read-suggestion extracts first word
 
 ```scrut
