@@ -6,9 +6,15 @@
 $ source "$TESTDIR/helpers/setup.zsh"
 > -cbx-generate-complist
 > echo "exit: $?"
-> echo "rows: ${#_cbx_row_kinds}"
+> echo "ids: ${#_cbx_row_ids}"
+> echo "kinds: ${#_cbx_row_kinds}"
+> echo "texts: ${#_cbx_row_texts}"
+> echo "descs: ${#_cbx_row_descriptions}"
 exit: 1
-rows: 0
+ids: 0
+kinds: 0
+texts: 0
+descs: 0
 ```
 
 ## Single candidate produces one row
