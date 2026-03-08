@@ -246,6 +246,12 @@ function -cbx-render-status-line() {
   status_text+="[${_cbx_selected_num}/${_cbx_total_candidates}]"
 
   local -i status_width=${(m)#status_text}
+  local -i max_status=$(( _cbx_content_width - 2 ))
+  if (( status_width > max_status )); then
+    status_text="${status_text[1,${max_status}]}"
+    status_width=${(m)#status_text}
+  fi
+
   local -i fill=$(( _cbx_content_width - 2 - status_width ))
   if (( fill > 0 )); then
     local -i si

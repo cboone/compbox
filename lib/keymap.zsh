@@ -38,10 +38,8 @@ function -cbx-keymap-enter() {
   # Switch to the popup keymap and enter recursive-edit
   zle -K _cbx_menu
   zle recursive-edit
-  local ret=$?
 
-  # recursive-edit returns 1 when exited via send-break
-  # Determine action from state variable
+  # Determine action from state variable (not recursive-edit's return value)
   return 0
 }
 

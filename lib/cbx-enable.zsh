@@ -35,10 +35,14 @@ function cbx-enable() {
   }
 
   # Wrap _main_complete so candidate capture mode is enabled during completion.
-  functions[_cbx-orig-main-complete]="${functions[_main_complete]}"
-  function _main_complete() {
-    -cbx-complete "$@"
-  }
+  if (( ${+functions[_main_complete]} )); then
+    functions[_cbx-orig-main-complete]="${functions[_main_complete]}"
+    function _main_complete() {
+      -cbx-complete "$@"
+    }
+  else
+    print -r -- "compbox: _main_complete not defined; run compinit before cbx-enable" >&2
+  fi
 
   # Save the current list-grouped zstyle value, then disable it
   local current_grouped
