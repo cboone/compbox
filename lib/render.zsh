@@ -110,10 +110,10 @@ function -cbx-render-full() {
 
 # Compute which candidate number the current selection represents
 function -cbx-render-selected-number() {
-  selected_num=0
+  typeset -gi _cbx_selected_num=0
   local -i ci
   for (( ci=1; ci <= _cbx_selected_idx; ci++ )); do
-    [[ "${_cbx_row_kinds[${ci}]}" == "candidate" ]] && (( selected_num++ ))
+    [[ "${_cbx_row_kinds[${ci}]}" == "candidate" ]] && (( _cbx_selected_num++ ))
   done
 }
 
@@ -242,9 +242,8 @@ function -cbx-render-status-line() {
     status_text+="${CBX_ARROW_DOWN}   "
   fi
 
-  local -i selected_num
   -cbx-render-selected-number
-  status_text+="[${selected_num}/${_cbx_total_candidates}]"
+  status_text+="[${_cbx_selected_num}/${_cbx_total_candidates}]"
 
   local -i status_width=${(m)#status_text}
   local -i fill=$(( _cbx_content_width - 2 - status_width ))

@@ -148,9 +148,8 @@ height: 7
 $ source "$TESTDIR/helpers/setup.zsh"
 > typeset -ga _cbx_row_kinds=("candidate" "divider" "candidate" "candidate")
 > _cbx_selected_idx=4
-> typeset -i selected_num
 > -cbx-render-selected-number
-> echo "selected: ${selected_num}"
+> echo "selected: ${_cbx_selected_num}"
 selected: 3
 ```
 
@@ -160,9 +159,8 @@ selected: 3
 $ source "$TESTDIR/helpers/setup.zsh"
 > typeset -ga _cbx_row_kinds=("candidate" "candidate")
 > _cbx_selected_idx=1
-> typeset -i selected_num
 > -cbx-render-selected-number
-> echo "selected: ${selected_num}"
+> echo "selected: ${_cbx_selected_num}"
 selected: 1
 ```
 
@@ -172,9 +170,8 @@ selected: 1
 $ source "$TESTDIR/helpers/setup.zsh"
 > typeset -ga _cbx_row_kinds=("candidate" "candidate")
 > _cbx_selected_idx=0
-> typeset -i selected_num
 > -cbx-render-selected-number
-> echo "selected: ${selected_num}"
+> echo "selected: ${_cbx_selected_num}"
 selected: 0
 ```
 
