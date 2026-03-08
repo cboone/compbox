@@ -21,10 +21,12 @@ exercise these in isolation.
 A bootstrap script sourced at the top of every scrut code block. It:
 
 1. Sources library files in order (constants first, then pure-logic modules)
-2. Stubs ZLE and rendering functions that produce terminal output
-3. Provides `cbx_add_candidate` to build packed `_cbx_compcap` entries
+1. Initializes `_cbx_compcap` as an empty array (`typeset -ga _cbx_compcap=()`)
+   so `cbx_add_candidate` can append to it
+1. Stubs ZLE and rendering functions that produce terminal output
+1. Provides `cbx_add_candidate` to build packed `_cbx_compcap` entries
    (avoids command substitution which strips NUL bytes)
-4. Provides `dump_rows` to print row arrays for snapshot comparison
+1. Provides `dump_rows` to print row arrays for snapshot comparison
 
 **Source order:**
 
