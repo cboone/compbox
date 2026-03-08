@@ -89,8 +89,8 @@ function cbx-complete() {
     -cbx-ghost-update "${word}"
   fi
 
-  # Set up SIGWINCH handler for terminal resize
-  trap '-cbx-cleanup; zle reset-prompt; return 0' WINCH
+  # Set up signal handlers: SIGWINCH dismisses on resize, SIGINT cancels
+  trap '-cbx-cleanup; zle reset-prompt; return 0' WINCH INT
 
   # Create keymap and enter navigation loop
   -cbx-keymap-create
@@ -122,8 +122,8 @@ function -cbx-cleanup() {
   # Show cursor (in case it was hidden)
   printf '\e[?25h' > /dev/tty
 
-  # Remove SIGWINCH trap
-  trap - WINCH
+  # Remove signal traps
+  trap - WINCH INT
 
   # Refresh the prompt
   zle -R
