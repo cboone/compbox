@@ -17,5 +17,5 @@
   },
 
   // Files to ignore
-  "ignores": ["CHANGELOG.md"],
+  "ignores": ["CHANGELOG.md", "tests/**"],
 }

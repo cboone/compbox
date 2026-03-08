@@ -1,4 +1,4 @@
-.PHONY: lint lint-md format format-check spell help
+.PHONY: lint lint-md format format-check spell test help
 
 lint: lint-md spell ## Run all linters
 
@@ -10,6 +10,9 @@ format: ## Format files with Prettier
 
 format-check: ## Check formatting with Prettier
 	npx prettier@3.8.1 --check .
+
+test: ## Run scrut tests
+	scrut test --shell zsh tests/*.md
 
 spell: ## Run spell check
 	npx cspell@9.7.0 --dot .

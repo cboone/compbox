@@ -67,6 +67,26 @@ jobs:
       - name: Run cspell
         uses: streetsidesoftware/cspell-action@v6
 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install scrut
+        run: cargo install --locked scrut
+
+      - name: Run tests
+        run: make test
+
   actionlint:
     name: Lint GitHub Actions
     runs-on: ubuntu-latest

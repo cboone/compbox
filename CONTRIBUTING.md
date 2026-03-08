@@ -29,6 +29,18 @@ make lint
 
 # Check formatting
 make format-check
+
+# Run tests
+make test
+```
+
+### Test Dependencies
+
+Tests use [scrut](https://github.com/facebookincubator/scrut) for CLI
+snapshot testing:
+
+```bash
+cargo install --locked scrut
 ```
 
 ## Code Style
