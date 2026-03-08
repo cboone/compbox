@@ -63,6 +63,18 @@ function dump_rows() {
 }
 ```
 
+### Tooling Prerequisite
+
+`scrut` is not currently installed anywhere in this repository's local or CI
+flows, so this plan must add an explicit installation path instead of assuming
+the binary already exists.
+
+- Document local setup in `CONTRIBUTING.md` with `cargo install --locked scrut`
+- Add a dedicated CI `test` job that installs Rust, installs `scrut`, and then
+  runs `make test`
+- Keep the `Makefile` target as `scrut test --shell zsh tests/*.md` so local
+  and CI execution use the same command once the dependency is installed
+
 ### Test Files (6 files, ~80 test cases)
 
 All in `tests/`. Each fenced code block is an independent test with its own
@@ -194,11 +206,12 @@ Tests render computation functions (`lib/render.zsh`).
 
 | File | Change |
 | --- | --- |
+| `CONTRIBUTING.md` | Document local `scrut` installation with `cargo install --locked scrut` |
 | `Makefile` | Add `test` target: `scrut test --shell zsh tests/*.md` |
 | `.prettierignore` | Add `tests/` (scrut markdown not Prettier-compatible) |
 | `.markdownlint-cli2.jsonc` | Add `tests/**` to ignores |
 | `cspell.json` | Add test-related words (`scrut`, `testdir`, etc.) |
-| `.github/workflows/ci.yml` | Add `test` job |
+| `.github/workflows/ci.yml` | Add `test` job that installs Rust and `scrut`, then runs `make test` |
 
 ## Key Design Decisions
 
