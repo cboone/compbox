@@ -350,7 +350,8 @@ While the popup is open, the selected candidate's completion suffix is shown as
 dim text after the cursor on the command line, using `$POSTDISPLAY`.
 
 - User typed `git re`, selection is `rebase`: ghost shows `base` after cursor
-- User typed `ls` (empty prefix), selection is `src/`: ghost shows `src/`
+- User typed `ls` (empty prefix after trailing space), selection is `src/`: ghost
+  shows `src/`
 - On each selection change (arrow/tab), update `$POSTDISPLAY` and call `zle -R`
 
 On popup close:
@@ -502,9 +503,10 @@ sufficient for v1.
 1. **Ghost text**: while popup is open, verify dim suffix text appears after
    cursor and updates as selection changes. On exit, verify prior `$POSTDISPLAY`
    state is restored.
-1. **Autosuggestion pre-selection**: type `git` with zsh-autosuggestions showing
-   a history suggestion (for example `commit`). Press Tab. Verify the popup opens
-   with `commit` highlighted instead of the first item.
+1. **Autosuggestion pre-selection**: type `git` followed by a space (to trigger
+   subcommand completion) with zsh-autosuggestions showing a history suggestion
+   (for example `commit`). Press Tab. Verify the popup opens with `commit`
+   highlighted instead of the first item.
 1. **Above-cursor placement**: move prompt to bottom of terminal. Tab to complete.
    Verify popup appears above the prompt line.
 1. **Type-to-filter**: open popup, type characters, verify list narrows, status
