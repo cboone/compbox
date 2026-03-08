@@ -72,8 +72,10 @@ flows, so this plan must add an explicit installation path instead of assuming
 the binary already exists.
 
 - Document local setup in `CONTRIBUTING.md` with `cargo install --locked scrut`
-- Add a dedicated CI `test` job that installs Rust, installs `scrut`, and then
-  runs `make test`
+- Add a dedicated CI `test` job that installs zsh (`apt-get install zsh`),
+  installs Rust, installs `scrut`, and then runs `make test`. Ubuntu runners
+  typically include zsh, but an explicit install step guards against image
+  updates that drop it.
 - Keep the `Makefile` target as `scrut test --shell zsh tests/*.md` so local
   and CI execution use the same command once the dependency is installed
 
@@ -209,14 +211,14 @@ status-line behavior must explicitly set or leave unset `_cbx_filter_string`.
 
 ## Files to Modify
 
-| File | Change |
-| --- | --- |
-| `CONTRIBUTING.md` | Document local `scrut` installation with `cargo install --locked scrut` |
-| `Makefile` | Add `test` to `.PHONY` and add `test` target: `scrut test --shell zsh tests/*.md` |
-| `.prettierignore` | Add `tests/` (scrut markdown not Prettier-compatible) |
-| `.markdownlint-cli2.jsonc` | Add `tests/**` to ignores |
-| `cspell.json` | Add test-related words (`scrut`, `testdir`, etc.) |
-| `.github/workflows/ci.yml` | Add `test` job that installs Rust and `scrut`, then runs `make test` |
+| File                        | Change                                                                   |
+| --------------------------- | ------------------------------------------------------------------------ |
+| `CONTRIBUTING.md`           | Document local `scrut` installation with `cargo install --locked scrut`  |
+| `Makefile`                  | Add `test` to `.PHONY` and add `test` target: `scrut test --shell zsh tests/*.md` |
+| `.prettierignore`           | Add `tests/` (scrut markdown not Prettier-compatible)                    |
+| `.markdownlint-cli2.jsonc`  | Add `tests/**` to ignores                                               |
+| `cspell.json`               | Add test-related words (`scrut`, `testdir`, etc.)                        |
+| `.github/workflows/ci.yml`  | Add `test` job that installs zsh, Rust, and `scrut`, then runs `make test` |
 
 ## Key Design Decisions
 
