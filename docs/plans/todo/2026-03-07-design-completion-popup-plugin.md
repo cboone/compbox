@@ -1,4 +1,4 @@
-# Design: zsh-completion-menu Plugin
+# Design: Compbox Plugin
 
 ## Context
 
@@ -43,7 +43,7 @@ The plugin has two layers:
 
 ```text
 Tab press
-  -> zcm-complete (zle widget)
+  -> cbx-complete (zle widget)
     -> read $POSTDISPLAY (autosuggestion) for initial selection hint
     -> original expand-or-complete
       -> _main_complete (hooked)
@@ -55,7 +55,7 @@ Tab press
     -> set ghost text ($POSTDISPLAY) for selected candidate
     -> recursive-edit (navigation loop)
     -> restore screen, restore ghost text
-    -> if accepted: _zcm-apply (insert selected match)
+    -> if accepted: _cbx-apply (insert selected match)
     -> if cancelled: no insertion, line unchanged
 ```
 
@@ -65,28 +65,28 @@ Tab press
 
 ### 1.1 Widget Binding
 
-On plugin load (`zcm-enable`):
+On plugin load (`cbx-enable`):
 
 1. Save current Tab binding and create a frozen copy:
-   `zle -A $orig_widget .zcm-orig-$orig_widget`
-1. Bind Tab to `zcm-complete` in both emacs and viins keymaps
+   `zle -A $orig_widget .cbx-orig-$orig_widget`
+1. Bind Tab to `cbx-complete` in both emacs and viins keymaps
 1. Hook `compadd` by defining a shell function named `compadd` that shadows the
-   builtin; this function delegates to `-zcm-compadd` for capture and uses
+   builtin; this function delegates to `-cbx-compadd` for capture and uses
    `builtin compadd` for the real builtin call
-1. Hook `_main_complete` by wrapping it with `-zcm-complete`
+1. Hook `_main_complete` by wrapping it with `-cbx-complete`
 1. Save and set `zstyle ':completion:*' list-grouped false` (handle grouping
-   ourselves; the original value is restored by `zcm-disable`)
+   ourselves; the original value is restored by `cbx-disable`)
 
-### 1.2 compadd Wrapper (`-zcm-compadd`)
+### 1.2 compadd Wrapper (`-cbx-compadd`)
 
 Replaces the `compadd` builtin. On each call from a completion function:
 
 1. Parse all compadd flags with `zparseopts` (same flags as fzf-tab)
 1. Pass through immediately if `-O`, `-A`, or `-D` flags are present (query-mode
-   calls) or if `IN_ZCM` is unset
+   calls) or if `IN_CBX` is unset
 1. Capture candidates: `builtin compadd -A __hits -D __dscr "$@"`
 1. Assign each captured candidate a stable integer `id`
-1. Pack each candidate with metadata into `_zcm_compcap` array:
+1. Pack each candidate with metadata into `_cbx_compcap` array:
    - Format: `<id>\x02<display>\x02<metadata>` where metadata is NUL-delimited
      key-value pairs
    - Keys: `word`, `apre`, `hpre`, `PREFIX`, `SUFFIX`, `IPREFIX`, `ISUFFIX`,
@@ -125,9 +125,9 @@ popup state
   - saved screen region
 ```
 
-### 1.4 Selection Insertion (`_zcm-apply`)
+### 1.4 Selection Insertion (`_cbx-apply`)
 
-Registered as a completion widget via `zle -C _zcm-apply complete-word _zcm-apply`.
+Registered as a completion widget via `zle -C _cbx-apply complete-word _cbx-apply`.
 
 For each selected candidate:
 
@@ -143,12 +143,12 @@ are supported because selection is id-based.
 
 ### 1.5 Edge Cases
 
-| Case                | Behavior                                                   |
-| ------------------- | ---------------------------------------------------------- |
-| No matches          | Skip popup, let zsh show its "no matches" warning          |
-| Single match        | Auto-insert without showing popup                          |
-| Unambiguous prefix  | Insert common prefix, show popup on next Tab               |
-| Approximate matches | Strip `(#a1)` glob flags from PREFIX, add `-U` flag        |
+| Case                | Behavior                                            |
+| ------------------- | --------------------------------------------------- |
+| No matches          | Skip popup, let zsh show its "no matches" warning   |
+| Single match        | Auto-insert without showing popup                   |
+| Unambiguous prefix  | Insert common prefix, show popup on next Tab        |
+| Approximate matches | Strip `(#a1)` glob flags from PREFIX, add `-U` flag |
 
 ### 1.6 Suppressing Built-in menu-select
 
@@ -293,21 +293,21 @@ When the candidate list exceeds the visible viewport:
 
 ### 2.6 Navigation via recursive-edit
 
-Create a temporary keymap (`_zcm_menu`) with all navigation keys bound to
+Create a temporary keymap (`_cbx_menu`) with all navigation keys bound to
 handler widgets, then enter `zle recursive-edit`.
 
-| Key                      | Action                                              |
-| ------------------------ | --------------------------------------------------- |
-| `Up` / `Down`            | Move selection, scroll if needed                    |
-| `Tab`                    | Cycle forward through selectable candidates         |
-| `Shift-Tab`              | Cycle backward                                      |
-| `Enter`                  | Accept selected candidate                           |
-| `Escape`                 | Cancel (dismiss popup, no insertion)                 |
-| Printable characters     | Append to filter, refilter candidates, reset to top  |
-| `Backspace`              | Delete last filter character                        |
+| Key                  | Action                                              |
+| -------------------- | --------------------------------------------------- |
+| `Up` / `Down`        | Move selection, scroll if needed                    |
+| `Tab`                | Cycle forward through selectable candidates         |
+| `Shift-Tab`          | Cycle backward                                      |
+| `Enter`              | Accept selected candidate                           |
+| `Escape`             | Cancel (dismiss popup, no insertion)                |
+| Printable characters | Append to filter, refilter candidates, reset to top |
+| `Backspace`          | Delete last filter character                        |
 
 Both accept and cancel exit recursive-edit via `zle send-break`, differentiating
-through the `_zcm_state` variable. This avoids accidentally executing the command
+through the `_cbx_state` variable. This avoids accidentally executing the command
 line (which `accept-line` would do).
 
 While the popup is open, printable keys (including space) are consumed by the
@@ -350,7 +350,8 @@ While the popup is open, the selected candidate's completion suffix is shown as
 dim text after the cursor on the command line, using `$POSTDISPLAY`.
 
 - User typed `git re`, selection is `rebase`: ghost shows `base` after cursor
-- User typed `ls ` (empty prefix), selection is `src/`: ghost shows `src/`
+- User typed `ls` (empty prefix after trailing space), selection is `src/`: ghost
+  shows `src/`
 - On each selection change (arrow/tab), update `$POSTDISPLAY` and call `zle -R`
 
 On popup close:
@@ -402,16 +403,16 @@ deferred.
 ## 3. File Organization
 
 ```text
-zsh-completion-menu/
-  zsh-completion-menu.plugin.zsh    # entry point: sources lib, calls zcm-enable
+compbox/
+  compbox.plugin.zsh                # entry point: sources lib, calls cbx-enable
   lib/
-    zcm-enable.zsh                  # plugin activation (save bindings, install hooks)
-    zcm-disable.zsh                 # plugin deactivation (restore everything)
-    zcm-complete.zsh                # top-level Tab widget, orchestrates the flow
-    -zcm-compadd.zsh                # compadd wrapper (candidate capture)
-    -zcm-complete.zsh               # hooked _main_complete replacement
-    -zcm-apply.zsh                  # selection insertion completion widget
-    -zcm-generate-complist.zsh      # candidate processing and grouping
+    cbx-enable.zsh                  # plugin activation (save bindings, install hooks)
+    cbx-disable.zsh                 # plugin deactivation (restore everything)
+    cbx-complete.zsh                # top-level Tab widget, orchestrates the flow
+    -cbx-compadd.zsh                # compadd wrapper (candidate capture)
+    -cbx-complete.zsh               # hooked _main_complete replacement
+    -cbx-apply.zsh                  # selection insertion completion widget
+    -cbx-generate-complist.zsh      # candidate processing and grouping
     position.zsh                    # cursor query (DSR), popup placement algorithm
     render.zsh                      # box drawing, content filling, differential redraw
     navigate.zsh                    # state machine, selection movement, scroll
@@ -465,19 +466,19 @@ sufficient for v1.
 
 ## 5. Risks and Mitigations
 
-| Risk                                         | Mitigation                                                       |
-| -------------------------------------------- | ---------------------------------------------------------------- |
-| DSR response corrupted by simultaneous input  | Read char-by-char with timeout; unlikely during widget execution |
-| Wide (CJK) characters break column alignment  | Use `${(m)#string}` for display width calculation                |
-| tmux capture-pane coordinate mismatch         | Verify `pane_height` vs `$LINES`, adjust for status bars         |
-| recursive-edit + send-break side effects      | Test thoroughly; this is the approach fzf-tab validates          |
-| Performance with 1000+ candidates             | Only render visible rows (max 16); O(n) filter is fast enough    |
-| $POSTDISPLAY conflicts with other widgets     | Save and restore the pre-popup value on all exits                |
-| Autosuggestion word extraction is ambiguous   | Fall back to first selectable candidate on no match or multi-match |
-| SIGINT during popup leaves artifacts           | Treat as cancel; run full cleanup sequence on all exit paths       |
-| Terminal resize during popup                   | Dismiss popup, run cleanup, fall back to `zle reset-prompt`        |
-| Conflict with zsh-syntax-highlighting          | Syntax highlighting hooks into `zle-line-pre-redraw`; test that popup rendering and screen restore are not disrupted by highlight redraws |
-| Conflict with zsh-vi-mode                      | vi-mode manipulates keymaps; test that the temporary `_zcm_menu` keymap is not clobbered or leaked |
+| Risk                                         | Mitigation                                                                                                                                |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| DSR response corrupted by simultaneous input | Read char-by-char with timeout; unlikely during widget execution                                                                          |
+| Wide (CJK) characters break column alignment | Use `${(m)#string}` for display width calculation                                                                                         |
+| tmux capture-pane coordinate mismatch        | Verify `pane_height` vs `$LINES`, adjust for status bars                                                                                  |
+| recursive-edit + send-break side effects     | Test thoroughly; this is the approach fzf-tab validates                                                                                   |
+| Performance with 1000+ candidates            | Only render visible rows (max 16); O(n) filter is fast enough                                                                             |
+| $POSTDISPLAY conflicts with other widgets    | Save and restore the pre-popup value on all exits                                                                                         |
+| Autosuggestion word extraction is ambiguous  | Fall back to first selectable candidate on no match or multi-match                                                                        |
+| SIGINT during popup leaves artifacts         | Treat as cancel; run full cleanup sequence on all exit paths                                                                              |
+| Terminal resize during popup                 | Dismiss popup, run cleanup, fall back to `zle reset-prompt`                                                                               |
+| Conflict with zsh-syntax-highlighting        | Syntax highlighting hooks into `zle-line-pre-redraw`; test that popup rendering and screen restore are not disrupted by highlight redraws |
+| Conflict with zsh-vi-mode                    | vi-mode manipulates keymaps; test that the temporary `_cbx_menu` keymap is not clobbered or leaked                                        |
 
 ---
 
@@ -502,9 +503,10 @@ sufficient for v1.
 1. **Ghost text**: while popup is open, verify dim suffix text appears after
    cursor and updates as selection changes. On exit, verify prior `$POSTDISPLAY`
    state is restored.
-1. **Autosuggestion pre-selection**: type `git ` with zsh-autosuggestions showing
-   a history suggestion (for example `commit`). Press Tab. Verify the popup opens
-   with `commit` highlighted instead of the first item.
+1. **Autosuggestion pre-selection**: type `git` followed by a space (to trigger
+   subcommand completion) with zsh-autosuggestions showing a history suggestion
+   (for example `commit`). Press Tab. Verify the popup opens with `commit`
+   highlighted instead of the first item.
 1. **Above-cursor placement**: move prompt to bottom of terminal. Tab to complete.
    Verify popup appears above the prompt line.
 1. **Type-to-filter**: open popup, type characters, verify list narrows, status
