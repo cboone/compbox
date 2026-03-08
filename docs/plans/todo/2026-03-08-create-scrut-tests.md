@@ -207,7 +207,7 @@ Tests render computation functions (`lib/render.zsh`).
 | File | Change |
 | --- | --- |
 | `CONTRIBUTING.md` | Document local `scrut` installation with `cargo install --locked scrut` |
-| `Makefile` | Add `test` target: `scrut test --shell zsh tests/*.md` |
+| `Makefile` | Add `test` to `.PHONY` and add `test` target: `scrut test --shell zsh tests/*.md` |
 | `.prettierignore` | Add `tests/` (scrut markdown not Prettier-compatible) |
 | `.markdownlint-cli2.jsonc` | Add `tests/**` to ignores |
 | `cspell.json` | Add test-related words (`scrut`, `testdir`, etc.) |
