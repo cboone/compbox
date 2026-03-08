@@ -23,7 +23,7 @@ function _cbx-apply() {
     local -A cand_meta
     local key val
     local -a parts
-    parts=("${(@s:\x00:)meta}")
+    parts=("${(@ps:\0:)meta}")
     local -i pidx
     for (( pidx=1; pidx < ${#parts}; pidx += 2 )); do
       key="${parts[${pidx}]}"
