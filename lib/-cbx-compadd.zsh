@@ -12,8 +12,7 @@ function -cbx-compadd() {
   fi
 
   # Parse compadd flags (same set as fzf-tab)
-  local -A apre hpre dscr mats opts
-  local -a query_flags
+  local -a opts query_flags
   zparseopts -D -E -a query_flags \
     O: A: D: \
     o+:=opts e+:=opts q+:=opts Q+:=opts r+:=opts R+:=opts S+:=opts \
