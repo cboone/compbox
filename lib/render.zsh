@@ -82,15 +82,15 @@ function -cbx-render-full() {
     local -i left_fill=$(( fill_width / 2 ))
     local -i right_fill=$(( fill_width - left_fill ))
     buf+="${CBX_TL}"
-    local -i fi
-    for (( fi=0; fi < left_fill; fi++ )); do buf+="${CBX_H}"; done
+    local -i hi
+    for (( hi=0; hi < left_fill; hi++ )); do buf+="${CBX_H}"; done
     buf+=" ${CBX_ARROW_UP} "
-    for (( fi=0; fi < right_fill; fi++ )); do buf+="${CBX_H}"; done
+    for (( hi=0; hi < right_fill; hi++ )); do buf+="${CBX_H}"; done
     buf+="${CBX_TR}"
   else
     buf+="${CBX_TL}"
-    local -i fi
-    for (( fi=0; fi < content_w; fi++ )); do buf+="${CBX_H}"; done
+    local -i hi
+    for (( hi=0; hi < content_w; hi++ )); do buf+="${CBX_H}"; done
     buf+="${CBX_TR}"
   fi
   (( row++ ))
@@ -108,7 +108,7 @@ function -cbx-render-full() {
     elif [[ "${_cbx_row_kinds[${vidx}]}" == "divider" ]]; then
       # Group divider
       buf+="${CBX_ML}"
-      for (( fi=0; fi < content_w; fi++ )); do buf+="${CBX_H}"; done
+      for (( hi=0; hi < content_w; hi++ )); do buf+="${CBX_H}"; done
       buf+="${CBX_MR}"
     else
       # Candidate row
@@ -188,7 +188,7 @@ function -cbx-render-full() {
     buf+="${status_text} ${CBX_BR}"
   else
     buf+="${CBX_BL}"
-    for (( fi=0; fi < content_w; fi++ )); do buf+="${CBX_H}"; done
+    for (( hi=0; hi < content_w; hi++ )); do buf+="${CBX_H}"; done
     buf+="${CBX_BR}"
   fi
 
@@ -254,8 +254,8 @@ function -cbx-render-row() {
 
   if [[ "${_cbx_row_kinds[${vidx}]}" == "divider" ]]; then
     __buf+="\e[${row};${col}H${CBX_ML}"
-    local -i fi
-    for (( fi=0; fi < _cbx_content_width; fi++ )); do __buf+="${CBX_H}"; done
+    local -i hi
+    for (( hi=0; hi < _cbx_content_width; hi++ )); do __buf+="${CBX_H}"; done
     __buf+="${CBX_MR}"
     return
   fi
@@ -349,15 +349,15 @@ function -cbx-render-top-border() {
     local -i left_fill=$(( fill_width / 2 ))
     local -i right_fill=$(( fill_width - left_fill ))
     __buf+="${CBX_TL}"
-    local -i fi
-    for (( fi=0; fi < left_fill; fi++ )); do __buf+="${CBX_H}"; done
+    local -i hi
+    for (( hi=0; hi < left_fill; hi++ )); do __buf+="${CBX_H}"; done
     __buf+=" ${CBX_ARROW_UP} "
-    for (( fi=0; fi < right_fill; fi++ )); do __buf+="${CBX_H}"; done
+    for (( hi=0; hi < right_fill; hi++ )); do __buf+="${CBX_H}"; done
     __buf+="${CBX_TR}"
   else
     __buf+="${CBX_TL}"
-    local -i fi
-    for (( fi=0; fi < _cbx_content_width; fi++ )); do __buf+="${CBX_H}"; done
+    local -i hi
+    for (( hi=0; hi < _cbx_content_width; hi++ )); do __buf+="${CBX_H}"; done
     __buf+="${CBX_TR}"
   fi
 }
