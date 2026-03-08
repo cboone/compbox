@@ -218,3 +218,51 @@ $ source "$TESTDIR/helpers/setup.zsh"
 > echo "idx: ${_cbx_selected_idx}"
 idx: 1
 ```
+
+## ensure-visible scrolls viewport up to selected row
+
+```scrut
+$ source "$TESTDIR/helpers/setup.zsh"
+> typeset -ga _cbx_row_kinds=("candidate" "candidate" "candidate" "candidate")
+> _cbx_visible_count=2
+> _cbx_viewport_start=3
+> _cbx_selected_idx=2
+> _cbx_needs_status=0
+> -cbx-navigate-ensure-visible
+> echo "viewport: ${_cbx_viewport_start}"
+> echo "status: ${_cbx_needs_status}"
+viewport: 2
+status: 1
+```
+
+## ensure-visible scrolls viewport down when selection moves below window
+
+```scrut
+$ source "$TESTDIR/helpers/setup.zsh"
+> typeset -ga _cbx_row_kinds=("candidate" "candidate" "candidate" "candidate")
+> _cbx_visible_count=2
+> _cbx_viewport_start=1
+> _cbx_selected_idx=4
+> _cbx_needs_status=0
+> -cbx-navigate-ensure-visible
+> echo "viewport: ${_cbx_viewport_start}"
+> echo "status: ${_cbx_needs_status}"
+viewport: 3
+status: 1
+```
+
+## ensure-visible leaves viewport unchanged when selection is visible
+
+```scrut
+$ source "$TESTDIR/helpers/setup.zsh"
+> typeset -ga _cbx_row_kinds=("candidate" "candidate" "candidate" "candidate")
+> _cbx_visible_count=3
+> _cbx_viewport_start=2
+> _cbx_selected_idx=3
+> _cbx_needs_status=0
+> -cbx-navigate-ensure-visible
+> echo "viewport: ${_cbx_viewport_start}"
+> echo "status: ${_cbx_needs_status}"
+viewport: 2
+status: 0
+```
