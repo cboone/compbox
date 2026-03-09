@@ -26,6 +26,9 @@ function -cbx-screen-save() {
     _cbx_saved_screen+=("${line}")
   done < <(tmux capture-pane -p -e -S "${tmux_start}" -E "${tmux_end}" 2>/dev/null)
 
+  # If nothing was captured, treat as failure so the caller can fall back
+  (( ${#_cbx_saved_screen} )) || return 1
+
   typeset -gi _cbx_saved_start=${start_row}
   typeset -gi _cbx_saved_end=${end_row}
 }

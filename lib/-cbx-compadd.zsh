@@ -63,14 +63,6 @@ function -cbx-compadd() {
     esac
   done
 
-  # Extract -d (description array name)
-  local dscr_var=""
-  for (( i=1; i <= ${#opts}; i++ )); do
-    case "${opts[${i}]}" in
-      -d) (( i + 1 <= ${#opts} )) && dscr_var="${opts[$(( i + 1 ))]}" ;;
-    esac
-  done
-
   # Build captured candidate entries
   local hit dscr_text
   local -i idx

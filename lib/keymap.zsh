@@ -97,6 +97,9 @@ function -cbx-ghost-update-from-selection() {
     local word
     word=$(-cbx-get-selected-word)
     -cbx-ghost-update "${word}"
+  else
+    POSTDISPLAY=""
+    zle -R
   fi
 }
 
