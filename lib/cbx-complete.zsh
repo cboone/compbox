@@ -5,6 +5,14 @@
 # and handles cleanup and insertion on exit.
 
 function cbx-complete() {
+  # Require tmux for popup rendering (screen save/restore)
+  if [[ -z "${TMUX:-}" ]]; then
+    typeset -g CBX_BYPASS_CAPTURE=1
+    zle ".cbx-orig-${CBX_ORIG_WIDGET}"
+    unset CBX_BYPASS_CAPTURE
+    return 0
+  fi
+
   # Read autosuggestion before completion modifies POSTDISPLAY
   -cbx-ghost-read-suggestion
 

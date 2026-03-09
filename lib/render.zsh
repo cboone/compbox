@@ -32,9 +32,10 @@ function -cbx-render-compute-dimensions() {
   # Add padding (1 space on each side of content)
   typeset -gi _cbx_content_width=$(( max_text_width + 2 ))
 
-  # Clamp to terminal width (including borders)
+  # Clamp to terminal width (including borders), minimum 1 column
   local -i max_content=$(( COLUMNS - 2 ))
-  (( _cbx_content_width > max_content )) && _cbx_content_width=${max_content}
+  (( max_content >= 1 && _cbx_content_width > max_content )) && _cbx_content_width=${max_content}
+  (( _cbx_content_width < 1 )) && _cbx_content_width=1
 
   # Total width including borders
   typeset -gi _cbx_popup_width=$(( _cbx_content_width + 2 ))
