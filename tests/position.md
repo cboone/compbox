@@ -170,7 +170,7 @@ height: 19
 
 ```scrut
 $ source "$TESTDIR/helpers/setup.zsh"
-> export LC_ALL=en_US.UTF-8
+> export LC_ALL=C.UTF-8
 > _cbx_cursor_row=5
 > _cbx_cursor_col=10
 > LINES=30

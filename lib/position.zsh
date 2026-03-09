@@ -6,7 +6,6 @@
 function -cbx-query-cursor() {
   # Query terminal for cursor position via DSR
   local response=""
-  local char
 
   # Send DSR request
   print -n '\e[6n' > /dev/tty
