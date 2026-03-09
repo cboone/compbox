@@ -22,7 +22,7 @@ function -cbx-ghost-update() {
   # Compute the suffix (what would be inserted after the current prefix)
   local ghost_text
   if [[ -n "${current_prefix}" && "${selected_word}" == "${current_prefix}"* ]]; then
-    ghost_text="${selected_word#${current_prefix}}"
+    ghost_text="${selected_word:${#current_prefix}}"
   else
     ghost_text="${selected_word}"
   fi

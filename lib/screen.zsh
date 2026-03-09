@@ -42,13 +42,13 @@ function -cbx-screen-restore() {
 
   for (( idx=1; idx <= ${#_cbx_saved_screen}; idx++ )); do
     # Move cursor to the start of this row and reprint preserved content
-    buf+="\e[${row};1H"
-    buf+="\e[2K"
+    buf+="${CBX_ESC}[${row};1H"
+    buf+="${CBX_ESC}[2K"
     buf+="${_cbx_saved_screen[${idx}]}"
     (( row++ ))
   done
 
-  printf '%b' "${buf}" > /dev/tty
+  printf '%s' "${buf}" > /dev/tty
 
   # Clean up
   _cbx_saved_screen=()

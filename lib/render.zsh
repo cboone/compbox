@@ -8,6 +8,7 @@ readonly CBX_TL='╭' CBX_TR='╮' CBX_BL='╰' CBX_BR='╯'
 readonly CBX_H='─' CBX_V='│'
 readonly CBX_ML='├' CBX_MR='┤'
 readonly CBX_ARROW_UP='▲' CBX_ARROW_DOWN='▼'
+readonly CBX_ESC=$'\e'
 
 readonly CBX_MAX_VISIBLE=16
 
@@ -62,7 +63,7 @@ function -cbx-render-full() {
   local buf=""
 
   # Hide cursor
-  buf+="\e[?25l"
+  buf+="${CBX_ESC}[?25l"
 
   local -i col=${_cbx_border_col}
   local -i content_w=${_cbx_content_width}
@@ -76,7 +77,7 @@ function -cbx-render-full() {
     if (( vidx > ${#_cbx_row_kinds} )); then
       # Empty row (beyond data)
       local -i empty_row=$(( _cbx_popup_row + 1 + vidx - _cbx_viewport_start ))
-      buf+="\e[${empty_row};${col}H${CBX_V}"
+      buf+="${CBX_ESC}[${empty_row};${col}H${CBX_V}"
       -cbx-render-pad buf ${content_w}
       buf+="${CBX_V}"
     else
@@ -93,19 +94,19 @@ function -cbx-render-full() {
     -cbx-render-status-line buf
   else
     local -i bottom_row=$(( _cbx_popup_row + 1 + _cbx_visible_count ))
-    buf+="\e[${bottom_row};${col}H${CBX_BL}"
+    buf+="${CBX_ESC}[${bottom_row};${col}H${CBX_BL}"
     local -i hi
     for (( hi=0; hi < content_w; hi++ )); do buf+="${CBX_H}"; done
     buf+="${CBX_BR}"
   fi
 
   # Show cursor
-  buf+="\e[?25h"
+  buf+="${CBX_ESC}[?25h"
 
   # Restore cursor to prompt position
-  buf+="\e[${_cbx_cursor_row};${_cbx_cursor_col}H"
+  buf+="${CBX_ESC}[${_cbx_cursor_row};${_cbx_cursor_col}H"
 
-  printf '%b' "${buf}" > /dev/tty
+  printf '%s' "${buf}" > /dev/tty
 }
 
 # Compute which candidate number the current selection represents
@@ -123,7 +124,7 @@ function -cbx-render-update-selection() {
   local -i new_idx="${2}"
 
   local buf=""
-  buf+="\e[?25l"
+  buf+="${CBX_ESC}[?25l"
 
   # Repaint old selection (remove highlight)
   -cbx-render-row buf ${prev_idx} 0
@@ -139,10 +140,10 @@ function -cbx-render-update-selection() {
   # Update top border for scroll indicator
   -cbx-render-top-border buf
 
-  buf+="\e[?25h"
-  buf+="\e[${_cbx_cursor_row};${_cbx_cursor_col}H"
+  buf+="${CBX_ESC}[?25h"
+  buf+="${CBX_ESC}[${_cbx_cursor_row};${_cbx_cursor_col}H"
 
-  printf '%b' "${buf}" > /dev/tty
+  printf '%s' "${buf}" > /dev/tty
 }
 
 # Render a single content row into the buffer
@@ -160,7 +161,7 @@ function -cbx-render-row() {
   local -i col=${_cbx_border_col}
 
   if [[ "${_cbx_row_kinds[${vidx}]}" == "divider" ]]; then
-    __buf+="\e[${row};${col}H${CBX_ML}"
+    __buf+="${CBX_ESC}[${row};${col}H${CBX_ML}"
     local -i hi
     for (( hi=0; hi < _cbx_content_width; hi++ )); do __buf+="${CBX_H}"; done
     __buf+="${CBX_MR}"
@@ -178,10 +179,10 @@ function -cbx-render-row() {
     (( left_pad < 0 )) && left_pad=0
     local -i right_pad=$(( _cbx_content_width - msg_width - left_pad ))
     (( right_pad < 0 )) && right_pad=0
-    __buf+="\e[${row};${col}H${CBX_V}"
+    __buf+="${CBX_ESC}[${row};${col}H${CBX_V}"
     local -i si
     for (( si=0; si < left_pad; si++ )); do __buf+=" "; done
-    __buf+="\e[2m${msg}\e[0m"
+    __buf+="${CBX_ESC}[2m${msg}${CBX_ESC}[0m"
     for (( si=0; si < right_pad; si++ )); do __buf+=" "; done
     __buf+="${CBX_V}"
     return
@@ -207,10 +208,10 @@ function -cbx-render-row() {
     text_display_width=${avail}
   fi
 
-  __buf+="\e[${row};${col}H${CBX_V} "
+  __buf+="${CBX_ESC}[${row};${col}H${CBX_V} "
 
   if (( is_selected )); then
-    __buf+="\e[31m${text}\e[0m"
+    __buf+="${CBX_ESC}[31m${text}${CBX_ESC}[0m"
   else
     __buf+="${text}"
   fi
@@ -222,9 +223,9 @@ function -cbx-render-row() {
     local -i si
     for (( si=0; si < spaces; si++ )); do __buf+=" "; done
     if (( is_selected )); then
-      __buf+="\e[2;31m${desc}\e[0m"
+      __buf+="${CBX_ESC}[2;31m${desc}${CBX_ESC}[0m"
     else
-      __buf+="\e[2m${desc}\e[0m"
+      __buf+="${CBX_ESC}[2m${desc}${CBX_ESC}[0m"
     fi
     __buf+=" "
   else
@@ -245,7 +246,7 @@ function -cbx-render-status-line() {
   local has_below=0
   (( _cbx_viewport_start + _cbx_visible_count - 1 < ${#_cbx_row_kinds} )) && has_below=1
 
-  __buf+="\e[${row};${col}H${CBX_BL} "
+  __buf+="${CBX_ESC}[${row};${col}H${CBX_BL} "
 
   local status_text=""
   if [[ -n "${_cbx_filter_string:-}" ]]; then
@@ -282,7 +283,7 @@ function -cbx-render-top-border() {
   local has_above=0
   (( _cbx_viewport_start > 1 )) && has_above=1
 
-  __buf+="\e[${row};${col}H"
+  __buf+="${CBX_ESC}[${row};${col}H"
   if (( has_above )); then
     local -i fill_width=$(( _cbx_content_width - 3 ))
     local -i left_fill=$(( fill_width / 2 ))
