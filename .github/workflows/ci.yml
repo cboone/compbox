@@ -25,12 +25,12 @@ permissions:
 
 jobs:
   text-lint:
-    uses: cboone/gh-actions/.github/workflows/text-lint.yml@main
+    uses: cboone/gh-actions/.github/workflows/text-lint.yml@v1
     with:
       run-cspell: true
 
   github-lint:
-    uses: cboone/gh-actions/.github/workflows/github-lint.yml@main
+    uses: cboone/gh-actions/.github/workflows/github-lint.yml@v1
 
   test:
     name: Test
