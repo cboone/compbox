@@ -33,8 +33,8 @@ function -cbx-navigate-down() {
   while (( idx <= total )); do
     if [[ "${_cbx_row_kinds[${idx}]}" == "candidate" ]]; then
       _cbx_selected_idx=${idx}
-      -cbx-navigate-ensure-visible
-      -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
+      -cbx-navigate-ensure-visible || \
+        -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
       return 0
     fi
     (( idx++ ))
@@ -55,8 +55,8 @@ function -cbx-navigate-up() {
   while (( idx >= 1 )); do
     if [[ "${_cbx_row_kinds[${idx}]}" == "candidate" ]]; then
       _cbx_selected_idx=${idx}
-      -cbx-navigate-ensure-visible
-      -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
+      -cbx-navigate-ensure-visible || \
+        -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
       return 0
     fi
     (( idx-- ))
@@ -78,8 +78,8 @@ function -cbx-navigate-next() {
   while (( idx <= total )); do
     if [[ "${_cbx_row_kinds[${idx}]}" == "candidate" ]]; then
       _cbx_selected_idx=${idx}
-      -cbx-navigate-ensure-visible
-      -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
+      -cbx-navigate-ensure-visible || \
+        -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
       return 0
     fi
     (( idx++ ))
@@ -89,8 +89,8 @@ function -cbx-navigate-next() {
   for (( idx=1; idx < _cbx_selected_idx; idx++ )); do
     if [[ "${_cbx_row_kinds[${idx}]}" == "candidate" ]]; then
       _cbx_selected_idx=${idx}
-      -cbx-navigate-ensure-visible
-      -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
+      -cbx-navigate-ensure-visible || \
+        -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
       return 0
     fi
   done
@@ -108,8 +108,8 @@ function -cbx-navigate-prev() {
   while (( idx >= 1 )); do
     if [[ "${_cbx_row_kinds[${idx}]}" == "candidate" ]]; then
       _cbx_selected_idx=${idx}
-      -cbx-navigate-ensure-visible
-      -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
+      -cbx-navigate-ensure-visible || \
+        -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
       return 0
     fi
     (( idx-- ))
@@ -119,25 +119,28 @@ function -cbx-navigate-prev() {
   for (( idx=total; idx > _cbx_selected_idx; idx-- )); do
     if [[ "${_cbx_row_kinds[${idx}]}" == "candidate" ]]; then
       _cbx_selected_idx=${idx}
-      -cbx-navigate-ensure-visible
-      -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
+      -cbx-navigate-ensure-visible || \
+        -cbx-render-update-selection ${prev} ${_cbx_selected_idx}
       return 0
     fi
   done
 }
 
-# Ensure the selected row is within the visible viewport, scrolling if needed
+# Ensure the selected row is within the visible viewport, scrolling if needed.
+# Returns 0 if a full redraw was performed, 1 otherwise.
 function -cbx-navigate-ensure-visible() {
   if (( _cbx_selected_idx < _cbx_viewport_start )); then
     _cbx_viewport_start=${_cbx_selected_idx}
-    # Need full redraw when viewport changes
     _cbx_needs_status=1
     -cbx-render-full
+    return 0
   elif (( _cbx_selected_idx >= _cbx_viewport_start + _cbx_visible_count )); then
     _cbx_viewport_start=$(( _cbx_selected_idx - _cbx_visible_count + 1 ))
     _cbx_needs_status=1
     -cbx-render-full
+    return 0
   fi
+  return 1
 }
 
 function -cbx-navigate-accept() {

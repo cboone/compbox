@@ -66,6 +66,10 @@ function cbx-complete() {
   if (( _cbx_visible_count > max_rows )); then
     _cbx_visible_count=${max_rows}
     _cbx_popup_height=$(( _cbx_visible_count + 2 ))
+    # Recompute status-line flag after clamping
+    if (( ${#_cbx_row_kinds} > _cbx_visible_count )); then
+      _cbx_needs_status=1
+    fi
   fi
 
   -cbx-compute-position ${_cbx_popup_height} ${_cbx_popup_width}
