@@ -8,6 +8,8 @@ function -cbx-ghost-save() {
 }
 
 function -cbx-ghost-restore() {
+  # Only restore if we actually saved a value; makes this idempotent.
+  (( ! ${+_cbx_saved_postdisplay} )) && return 0
   POSTDISPLAY="${_cbx_saved_postdisplay}"
   unset _cbx_saved_postdisplay
 }
