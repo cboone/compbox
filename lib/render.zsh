@@ -285,7 +285,7 @@ function -cbx-render-top-border() {
   (( _cbx_viewport_start > 1 )) && has_above=1
 
   __buf+="${CBX_ESC}[${row};${col}H"
-  if (( has_above )); then
+  if (( has_above && _cbx_content_width >= 3 )); then
     local -i fill_width=$(( _cbx_content_width - 3 ))
     local -i left_fill=$(( fill_width / 2 ))
     local -i right_fill=$(( fill_width - left_fill ))
