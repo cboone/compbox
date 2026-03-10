@@ -10,7 +10,9 @@ function -cbx-ghost-save() {
 function -cbx-ghost-restore() {
   # Only restore if we actually saved a value; makes this idempotent.
   (( ! ${+_cbx_saved_postdisplay} )) && return 0
-  POSTDISPLAY="${_cbx_saved_postdisplay}"
+  # POSTDISPLAY is read-only during signal handlers inside recursive-edit;
+  # suppress the error since zle reset-prompt handles display cleanup.
+  { POSTDISPLAY="${_cbx_saved_postdisplay}" } 2>/dev/null
   unset _cbx_saved_postdisplay
 }
 
