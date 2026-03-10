@@ -1,0 +1,42 @@
+#!/usr/bin/env zsh
+# bin/test-shell — Launch a test shell with compbox loaded over normal config
+# Author: Christopher Boone
+# Date: 2026-03-10
+
+set -euo pipefail
+
+readonly PLUGIN_ROOT="${0:A:h:h}"
+
+function cleanup() {
+  local exit_code="${?}"
+  [[ -n "${ZDOTDIR:-}" ]] && rm -rf "${ZDOTDIR}"
+  exit "${exit_code}"
+}
+
+function main() {
+  trap cleanup EXIT
+
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+
+  cat > "${tmpdir}/.zshrc" <<'ZSHRC'
+# Load the real zshrc
+source "${HOME}/.zshrc"
+
+# Override menu-select zstyle (compbox replaces this entirely)
+zstyle ':completion:*:*:*:*:*' menu no
+
+# Load compbox (after compinit, which Oh My Zsh already ran)
+source "__PLUGIN_ROOT__/compbox.plugin.zsh"
+
+print "compbox loaded. Press Tab to test completion."
+print "Run 'cbx-disable' to turn it off, 'cbx-enable' to re-enable."
+ZSHRC
+
+  # Inject the resolved plugin root path
+  sed -i '' "s|__PLUGIN_ROOT__|${PLUGIN_ROOT}|g" "${tmpdir}/.zshrc"
+
+  ZDOTDIR="${tmpdir}" exec zsh -i
+}
+
+main "${@}"
