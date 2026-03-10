@@ -98,15 +98,16 @@ function cbx-complete() {
     return 0
   fi
 
-  # Initial render
-  -cbx-render-full
-
-  # Show initial ghost text
+  # Set ghost text before rendering so that zle -R clears the area
+  # below the prompt first; the popup is then drawn on the cleared rows.
   if (( _cbx_selected_idx > 0 )); then
     local word
     word=$(-cbx-get-selected-word)
     -cbx-ghost-update "${word}"
   fi
+
+  # Initial render (must come after ghost update to avoid zle -R erasure)
+  -cbx-render-full
 
   # Set up signal handlers: SIGWINCH dismisses on resize, SIGINT cancels
   trap '-cbx-cleanup; zle reset-prompt; return 0' WINCH INT
