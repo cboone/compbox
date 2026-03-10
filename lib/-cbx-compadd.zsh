@@ -11,7 +11,12 @@ function -cbx-compadd() {
     return
   fi
 
-  # Parse compadd flags (same set as fzf-tab)
+  # Save original args before zparseopts strips them from $@
+  local -a orig_args=("$@")
+
+  # Parse compadd flags for metadata extraction and query-mode detection.
+  # zparseopts -D removes recognised options from $@, but we kept the
+  # originals above so the builtin calls still get the full argument list.
   local -a opts query_flags
   zparseopts -D -E -a query_flags \
     O: A: D: \
@@ -26,21 +31,23 @@ function -cbx-compadd() {
   for flag in "${query_flags[@]}"; do
     case "${flag}" in
       -O|-A|-D)
-        builtin compadd "$@"
+        builtin compadd "${orig_args[@]}"
         return
         ;;
     esac
   done
 
-  # Capture candidates using -A (match array) and -D (description array)
-  local -a __hits __dscr
-  builtin compadd -A __hits -D __dscr "$@"
+  # Capture matching candidates into __hits. The -A flag puts compadd in
+  # query mode (matches stored in array, not added to the completion list).
+  # We pass the full original args so flags like -a, -k, -M, -U are intact.
+  local -a __hits
+  builtin compadd -A __hits "${orig_args[@]}"
   local ret=$?
 
-  # Also call the real builtin to keep compstate correct
-  builtin compadd "$@"
+  # Register matches with the completion system using the full original args
+  builtin compadd "${orig_args[@]}"
 
-  # If no candidates were captured, nothing more to do
+  # If no candidates matched, nothing more to do
   (( ${#__hits} )) || return ${ret}
 
   # Extract group name from -J or -V flags
@@ -69,11 +76,7 @@ function -cbx-compadd() {
   for (( idx=1; idx <= ${#__hits}; idx++ )); do
     hit="${__hits[${idx}]}"
 
-    # Get the description if available
     dscr_text=""
-    if (( idx <= ${#__dscr} )); then
-      dscr_text="${__dscr[${idx}]}"
-    fi
 
     # Assign a stable integer id
     (( _cbx_next_id++ ))
@@ -91,7 +94,7 @@ function -cbx-compadd() {
     meta+="${_cbx_nul}wsuf${_cbx_nul}${word_suffix}"
 
     # Store the original compadd args for replay during apply
-    local args_packed="${(pj:\x1f:)@}"
+    local args_packed="${(pj:\x1f:)orig_args}"
     meta+="${_cbx_nul}args${_cbx_nul}${args_packed}"
 
     # Pack: id \x02 display \x02 metadata
