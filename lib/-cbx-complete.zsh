@@ -9,10 +9,10 @@ function -cbx-complete() {
     return $?
   fi
 
-  # Enable capture mode
+  # Enable capture mode (cbx-complete initializes _cbx_compcap once per
+  # Tab press; we only set IN_CBX here so that multiple _main_complete
+  # calls accumulate candidates instead of resetting them)
   typeset -g IN_CBX=1
-  typeset -ga _cbx_compcap=()
-  typeset -gi _cbx_next_id=0
 
   # Run the original _main_complete
   _cbx-orig-main-complete "$@"
