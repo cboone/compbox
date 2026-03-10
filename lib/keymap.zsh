@@ -23,8 +23,8 @@ function -cbx-keymap-create() {
 
   # Bind printable characters to the filter handler
   local -i i
+  local char
   for (( i=32; i <= 126; i++ )); do
-    local char
     printf -v char '%b' "$(printf '\\x%02x' ${i})"
     bindkey -M _cbx_menu "${char}" _cbx-widget-char
   done
