@@ -18,11 +18,12 @@ function -cbx-complete() {
   _cbx-orig-main-complete "$@"
   local ret=$?
 
-  # Suppress built-in menu-select display
-  if (( ${#_cbx_compcap} > 0 )); then
-    compstate[list]=''
-    compstate[insert]=''
-  fi
+  # Always suppress built-in display and insertion in capture mode.
+  # Since we no longer register matches with the completion system
+  # (to prevent zle -R from displaying a match list and scrolling),
+  # we suppress unconditionally to avoid beeps or retries from nmatches=0.
+  compstate[list]=''
+  compstate[insert]=''
 
   unset IN_CBX
   return ${ret}

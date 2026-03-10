@@ -1,8 +1,8 @@
 # -cbx-compadd.zsh — compadd wrapper for candidate capture
 #
 # Shadows the compadd builtin. When IN_CBX is set, captures candidate metadata
-# into the _cbx_compcap array. Always delegates to the real builtin to keep
-# compstate bookkeeping correct.
+# into the _cbx_compcap array using query mode (-A) without registering matches,
+# so zsh never displays a built-in match list.
 
 function -cbx-compadd() {
   # Pass through when not in capture mode
@@ -40,12 +40,14 @@ function -cbx-compadd() {
   # Capture matching candidates into __hits. The -A flag puts compadd in
   # query mode (matches stored in array, not added to the completion list).
   # We pass the full original args so flags like -a, -k, -M, -U are intact.
+  #
+  # We intentionally do NOT register matches with the completion system
+  # (no plain `builtin compadd` call). Registering matches causes zsh to
+  # display the full match list on any subsequent `zle -R`, scrolling the
+  # terminal and pushing the popup into scrollback.
   local -a __hits
   builtin compadd -A __hits "${orig_args[@]}"
   local ret=$?
-
-  # Register matches with the completion system using the full original args
-  builtin compadd "${orig_args[@]}"
 
   # If no candidates matched, nothing more to do
   (( ${#__hits} )) || return ${ret}
