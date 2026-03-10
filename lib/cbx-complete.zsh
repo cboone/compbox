@@ -19,13 +19,26 @@ function cbx-complete() {
   # Save ghost text
   -cbx-ghost-save
 
+  # Save buffer to detect expansion vs no-op
+  local saved_buffer="${BUFFER}"
+
   # Run the original completion widget (with capture hooks active)
   zle ".cbx-orig-${CBX_ORIG_WIDGET}"
 
-  # If no candidates were captured, let zsh handle it normally
+  # If no candidates were captured, check why
   if (( ${#_cbx_compcap} == 0 )); then
-    -cbx-ghost-restore
-    return 0
+    if [[ "${BUFFER}" != "${saved_buffer}" ]]; then
+      # Buffer changed (expansion happened), accept it
+      -cbx-ghost-restore
+      return 0
+    fi
+    # expand-or-complete may not have triggered the completion system
+    # (e.g., first invocation initializing state). Retry explicitly.
+    zle complete-word
+    if (( ${#_cbx_compcap} == 0 )); then
+      -cbx-ghost-restore
+      return 0
+    fi
   fi
 
   # Single match: auto-insert without popup
