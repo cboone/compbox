@@ -34,6 +34,8 @@ function cbx-enable() {
 
   # Wrap _main_complete so candidate capture mode is enabled during completion.
   if (( ${+functions[_main_complete]} )); then
+    # Force-load if still an autoload stub, so we copy the real body
+    autoload +X _main_complete 2>/dev/null
     functions[_cbx-orig-main-complete]="${functions[_main_complete]}"
     function _main_complete() {
       -cbx-complete "$@"
