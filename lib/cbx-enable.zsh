@@ -9,9 +9,7 @@ function cbx-enable() {
 
   # Determine the current Tab widget
   local orig_widget
-  orig_widget="${$(bindkey '^I')##bindkey * }"
-  # Strip quotes if present
-  orig_widget="${orig_widget//\"/}"
+  orig_widget="${$(bindkey '^I')##\"*\" }"
   # Default to expand-or-complete if not bound
   [[ -z "${orig_widget}" ]] && orig_widget="expand-or-complete"
 
