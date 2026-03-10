@@ -49,16 +49,6 @@ function cbx-complete() {
     return 0
   }
 
-  # Query cursor position via DSR
-  if ! -cbx-query-cursor; then
-    -cbx-ghost-restore
-    typeset -g CBX_BYPASS_CAPTURE=1
-    _cbx_compcap=()
-    zle ".cbx-orig-${CBX_ORIG_WIDGET}"
-    unset CBX_BYPASS_CAPTURE
-    return 0
-  fi
-
   # Initialize navigation state
   -cbx-navigate-init
   -cbx-filter-init
@@ -70,8 +60,28 @@ function cbx-complete() {
     -cbx-navigate-first-selectable
   fi
 
-  # Compute popup dimensions and position
+  # Compute popup dimensions (width + initial height; no cursor position needed)
   -cbx-render-compute-dimensions
+
+  # Set ghost text BEFORE querying cursor position. The zle -R call inside
+  # ghost-update can cause the terminal to scroll (e.g. if the completion
+  # system left a match list pending). Querying DSR after ensures we get
+  # the post-scroll cursor coordinates.
+  if (( _cbx_selected_idx > 0 )); then
+    local word
+    word=$(-cbx-get-selected-word)
+    -cbx-ghost-update "${word}"
+  fi
+
+  # Query cursor position via DSR (after ghost text update / potential scroll)
+  if ! -cbx-query-cursor; then
+    -cbx-ghost-restore
+    typeset -g CBX_BYPASS_CAPTURE=1
+    _cbx_compcap=()
+    zle ".cbx-orig-${CBX_ORIG_WIDGET}"
+    unset CBX_BYPASS_CAPTURE
+    return 0
+  fi
 
   # Clamp visible count to available height
   -cbx-available-height
@@ -104,15 +114,7 @@ function cbx-complete() {
     return 0
   fi
 
-  # Set ghost text before rendering so that zle -R clears the area
-  # below the prompt first; the popup is then drawn on the cleared rows.
-  if (( _cbx_selected_idx > 0 )); then
-    local word
-    word=$(-cbx-get-selected-word)
-    -cbx-ghost-update "${word}"
-  fi
-
-  # Initial render (must come after ghost update to avoid zle -R erasure)
+  # Render the popup (ghost text already set, DSR already queried)
   -cbx-render-full
 
   # Set up signal handlers: SIGWINCH dismisses on resize, SIGINT cancels

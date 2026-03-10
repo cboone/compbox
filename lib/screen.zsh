@@ -10,14 +10,11 @@ function -cbx-screen-save() {
   # Require a tmux session for screen save/restore
   [[ -n "${TMUX:-}" ]] || return 1
 
-  # Convert visible terminal rows into tmux pane coordinates.
-  # The visible pane is addressed with negative offsets from the bottom.
-  local -i pane_height
-  pane_height=$(tmux display-message -p '#{pane_height}' 2>/dev/null) || return 1
-  (( pane_height > 0 )) || return 1
-
-  local -i tmux_start=$(( start_row - pane_height - 1 ))
-  local -i tmux_end=$(( end_row - pane_height - 1 ))
+  # Convert 1-based terminal rows to tmux capture-pane coordinates.
+  # tmux uses 0-based line numbers: 0 = first visible line,
+  # pane_height-1 = last visible line, negative = history/scrollback.
+  local -i tmux_start=$(( start_row - 1 ))
+  local -i tmux_end=$(( end_row - 1 ))
 
   # Capture the rows with ANSI styling preserved
   typeset -ga _cbx_saved_screen=()
