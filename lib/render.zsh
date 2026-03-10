@@ -2,6 +2,9 @@
 #
 # Renders the bordered popup using ANSI escape sequences. Supports full
 # initial render and differential redraw for selection changes.
+#
+# Helper functions (-cbx-render-row, -cbx-render-top-border, etc.) append
+# to the caller's local variable `buf` via zsh dynamic scoping.
 
 # Box-drawing characters (tmux rounded style)
 readonly CBX_TL='╭' CBX_TR='╮' CBX_BL='╰' CBX_BR='╯'
@@ -70,7 +73,7 @@ function -cbx-render-full() {
   local -i content_w=${_cbx_content_width}
 
   # Top border
-  -cbx-render-top-border buf
+  -cbx-render-top-border
 
   # Content rows
   local -i vidx
@@ -79,12 +82,12 @@ function -cbx-render-full() {
       # Empty row (beyond data)
       local -i empty_row=$(( _cbx_popup_row + 1 + vidx - _cbx_viewport_start ))
       buf+="${CBX_ESC}[${empty_row};${col}H${CBX_V}"
-      -cbx-render-pad buf ${content_w}
+      -cbx-render-pad ${content_w}
       buf+="${CBX_V}"
     else
       local -i is_sel=0
       (( vidx == _cbx_selected_idx )) && is_sel=1
-      -cbx-render-row buf ${vidx} ${is_sel}
+      -cbx-render-row ${vidx} ${is_sel}
     fi
   done
 
@@ -92,7 +95,7 @@ function -cbx-render-full() {
   local has_below=0
   (( _cbx_viewport_start + _cbx_visible_count - 1 < ${#_cbx_row_kinds} )) && has_below=1
   if (( has_below || _cbx_needs_status )); then
-    -cbx-render-status-line buf
+    -cbx-render-status-line
   else
     local -i bottom_row=$(( _cbx_popup_row + 1 + _cbx_visible_count ))
     buf+="${CBX_ESC}[${bottom_row};${col}H${CBX_BL}"
@@ -128,18 +131,18 @@ function -cbx-render-update-selection() {
   buf+="${CBX_ESC}[?25l"
 
   # Repaint old selection (remove highlight)
-  -cbx-render-row buf ${prev_idx} 0
+  -cbx-render-row ${prev_idx} 0
 
   # Repaint new selection (add highlight)
-  -cbx-render-row buf ${new_idx} 1
+  -cbx-render-row ${new_idx} 1
 
   # Update status line if needed
   if (( _cbx_needs_status )); then
-    -cbx-render-status-line buf
+    -cbx-render-status-line
   fi
 
   # Update top border for scroll indicator
-  -cbx-render-top-border buf
+  -cbx-render-top-border
 
   buf+="${CBX_ESC}[?25h"
   buf+="${CBX_ESC}[${_cbx_cursor_row};${_cbx_cursor_col}H"
@@ -148,10 +151,10 @@ function -cbx-render-update-selection() {
 }
 
 # Render a single content row into the buffer
+# Appends to caller's `buf` variable via dynamic scoping.
 function -cbx-render-row() {
-  local -n __buf="${1}"
-  local -i vidx="${2}"
-  local -i is_selected="${3}"
+  local -i vidx="${1}"
+  local -i is_selected="${2}"
 
   # Compute screen row from viewport position
   local -i screen_offset=$(( vidx - _cbx_viewport_start ))
@@ -162,10 +165,10 @@ function -cbx-render-row() {
   local -i col=${_cbx_border_col}
 
   if [[ "${_cbx_row_kinds[${vidx}]}" == "divider" ]]; then
-    __buf+="${CBX_ESC}[${row};${col}H${CBX_ML}"
+    buf+="${CBX_ESC}[${row};${col}H${CBX_ML}"
     local -i hi
-    for (( hi=0; hi < _cbx_content_width; hi++ )); do __buf+="${CBX_H}"; done
-    __buf+="${CBX_MR}"
+    for (( hi=0; hi < _cbx_content_width; hi++ )); do buf+="${CBX_H}"; done
+    buf+="${CBX_MR}"
     return
   fi
 
@@ -180,12 +183,12 @@ function -cbx-render-row() {
     (( left_pad < 0 )) && left_pad=0
     local -i right_pad=$(( _cbx_content_width - msg_width - left_pad ))
     (( right_pad < 0 )) && right_pad=0
-    __buf+="${CBX_ESC}[${row};${col}H${CBX_V}"
+    buf+="${CBX_ESC}[${row};${col}H${CBX_V}"
     local -i si
-    for (( si=0; si < left_pad; si++ )); do __buf+=" "; done
-    __buf+="${CBX_ESC}[2m${msg}${CBX_ESC}[0m"
-    for (( si=0; si < right_pad; si++ )); do __buf+=" "; done
-    __buf+="${CBX_V}"
+    for (( si=0; si < left_pad; si++ )); do buf+=" "; done
+    buf+="${CBX_ESC}[2m${msg}${CBX_ESC}[0m"
+    for (( si=0; si < right_pad; si++ )); do buf+=" "; done
+    buf+="${CBX_V}"
     return
   fi
 
@@ -209,12 +212,12 @@ function -cbx-render-row() {
     text_display_width=${avail}
   fi
 
-  __buf+="${CBX_ESC}[${row};${col}H${CBX_V} "
+  buf+="${CBX_ESC}[${row};${col}H${CBX_V} "
 
   if (( is_selected )); then
-    __buf+="${CBX_ESC}[31m${text}${CBX_ESC}[0m"
+    buf+="${CBX_ESC}[31m${text}${CBX_ESC}[0m"
   else
-    __buf+="${text}"
+    buf+="${text}"
   fi
 
   if [[ -n "${desc}" ]]; then
@@ -222,32 +225,32 @@ function -cbx-render-row() {
     local -i spaces=$(( _cbx_content_width - 2 - text_display_width - desc_width ))
     (( spaces < 1 )) && spaces=1
     local -i si
-    for (( si=0; si < spaces; si++ )); do __buf+=" "; done
+    for (( si=0; si < spaces; si++ )); do buf+=" "; done
     if (( is_selected )); then
-      __buf+="${CBX_ESC}[2;31m${desc}${CBX_ESC}[0m"
+      buf+="${CBX_ESC}[2;31m${desc}${CBX_ESC}[0m"
     else
-      __buf+="${CBX_ESC}[2m${desc}${CBX_ESC}[0m"
+      buf+="${CBX_ESC}[2m${desc}${CBX_ESC}[0m"
     fi
-    __buf+=" "
+    buf+=" "
   else
     local -i pad=$(( _cbx_content_width - 1 - text_display_width ))
     local -i si
-    for (( si=0; si < pad; si++ )); do __buf+=" "; done
+    for (( si=0; si < pad; si++ )); do buf+=" "; done
   fi
 
-  __buf+="${CBX_V}"
+  buf+="${CBX_V}"
 }
 
+# Render the status/bottom border line.
+# Appends to caller's `buf` variable via dynamic scoping.
 function -cbx-render-status-line() {
-  local -n __buf="${1}"
-
   local -i row=$(( _cbx_popup_row + 1 + _cbx_visible_count ))
   local -i col=${_cbx_border_col}
 
   local has_below=0
   (( _cbx_viewport_start + _cbx_visible_count - 1 < ${#_cbx_row_kinds} )) && has_below=1
 
-  __buf+="${CBX_ESC}[${row};${col}H${CBX_BL} "
+  buf+="${CBX_ESC}[${row};${col}H${CBX_BL} "
 
   local status_text=""
   if [[ -n "${_cbx_filter_string:-}" ]]; then
@@ -270,43 +273,43 @@ function -cbx-render-status-line() {
   local -i fill=$(( _cbx_content_width - 2 - status_width ))
   if (( fill > 0 )); then
     local -i si
-    for (( si=0; si < fill; si++ )); do __buf+=" "; done
+    for (( si=0; si < fill; si++ )); do buf+=" "; done
   fi
-  __buf+="${status_text} ${CBX_BR}"
+  buf+="${status_text} ${CBX_BR}"
 }
 
+# Render the top border line.
+# Appends to caller's `buf` variable via dynamic scoping.
 function -cbx-render-top-border() {
-  local -n __buf="${1}"
-
   local -i row=${_cbx_popup_row}
   local -i col=${_cbx_border_col}
 
   local has_above=0
   (( _cbx_viewport_start > 1 )) && has_above=1
 
-  __buf+="${CBX_ESC}[${row};${col}H"
+  buf+="${CBX_ESC}[${row};${col}H"
   if (( has_above && _cbx_content_width >= 3 )); then
     local -i fill_width=$(( _cbx_content_width - 3 ))
     local -i left_fill=$(( fill_width / 2 ))
     local -i right_fill=$(( fill_width - left_fill ))
-    __buf+="${CBX_TL}"
+    buf+="${CBX_TL}"
     local -i hi
-    for (( hi=0; hi < left_fill; hi++ )); do __buf+="${CBX_H}"; done
-    __buf+=" ${CBX_ARROW_UP} "
-    for (( hi=0; hi < right_fill; hi++ )); do __buf+="${CBX_H}"; done
-    __buf+="${CBX_TR}"
+    for (( hi=0; hi < left_fill; hi++ )); do buf+="${CBX_H}"; done
+    buf+=" ${CBX_ARROW_UP} "
+    for (( hi=0; hi < right_fill; hi++ )); do buf+="${CBX_H}"; done
+    buf+="${CBX_TR}"
   else
-    __buf+="${CBX_TL}"
+    buf+="${CBX_TL}"
     local -i hi
-    for (( hi=0; hi < _cbx_content_width; hi++ )); do __buf+="${CBX_H}"; done
-    __buf+="${CBX_TR}"
+    for (( hi=0; hi < _cbx_content_width; hi++ )); do buf+="${CBX_H}"; done
+    buf+="${CBX_TR}"
   fi
 }
 
-# Pad buffer with spaces
+# Pad buffer with spaces.
+# Appends to caller's `buf` variable via dynamic scoping.
 function -cbx-render-pad() {
-  local -n __buf="${1}"
-  local -i count="${2}"
+  local -i count="${1}"
   local -i i
-  for (( i=0; i < count; i++ )); do __buf+=" "; done
+  for (( i=0; i < count; i++ )); do buf+=" "; done
 }
