@@ -21,13 +21,8 @@ function -cbx-keymap-create() {
   bindkey -M _cbx_menu '^?'   _cbx-widget-backspace  # Backspace
   bindkey -M _cbx_menu '^H'   _cbx-widget-backspace  # Ctrl-H
 
-  # Bind printable characters to the filter handler
-  local -i i
-  local char
-  for (( i=32; i <= 126; i++ )); do
-    printf -v char '%b' "$(printf '\\x%02x' ${i})"
-    bindkey -M _cbx_menu "${char}" _cbx-widget-char
-  done
+  # Bind all printable characters (space through tilde) to the filter handler
+  bindkey -R -M _cbx_menu ' -~' _cbx-widget-char
 }
 
 function -cbx-keymap-destroy() {
