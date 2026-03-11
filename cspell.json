@@ -35,6 +35,7 @@
     "pidx",
     "POSTDISPLAY",
     "realdir",
+    "reentrancy",
     "scrut",
     "setopt",
     "shellcheck",
