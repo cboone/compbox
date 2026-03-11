@@ -45,7 +45,7 @@ All prior plugin implementation and tests were deleted:
 
 #### Configuration
 
-- `cspell.json`: Reformatted from single-line to multi-line array; added 10 new words (`beautysh`, `checkbashisms`, `EPOCHREALTIME`, `reentrancy`, `setopt`, `shellcheck`, `shellharden`, `shfmt`, `zcompile`, `zunit`).
+- `cspell.json`: Expanded dictionary `words` list; added 11 new terms (`beautysh`, `checkbashisms`, `EPOCHREALTIME`, `reentrancy`, `reimplementation`, `setopt`, `shellcheck`, `shellharden`, `shfmt`, `zcompile`, `zunit`).
 
 ### File Inventory
 
