@@ -32,8 +32,30 @@ jobs:
   github-lint:
     uses: cboone/gh-actions/.github/workflows/github-lint.yml@v1
 
-  test:
-    name: Test
+  check-zsh:
+    name: Check zsh
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install zsh and tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh shellcheck devscripts
+          sudo snap install shfmt
+          cargo install --locked shellharden
+          pip install beautysh
+
+      - name: Run zsh checks
+        run: make check-zsh
+
+  test-scrut:
+    name: Test (scrut)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -49,5 +71,44 @@ jobs:
       - name: Install scrut
         run: cargo install --locked scrut
 
-      - name: Run tests
-        run: make test
+      - name: Run scrut tests
+        run: make test-scrut
+
+  test-zunit:
+    name: Test (zunit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
+
+      - name: Install zunit
+        run: |
+          git clone --depth 1 https://github.com/zunit-zsh/zunit.git /tmp/zunit
+          cd /tmp/zunit
+          sudo ./build.zsh
+          sudo chmod +x /usr/local/bin/zunit
+
+      - name: Run zunit tests
+        run: make test-zunit
+
+  bench-smoke:
+    name: Benchmark (smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install zsh and tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh jq
+          wget -qO hyperfine.deb https://github.com/sharkdp/hyperfine/releases/download/v1.20.0/hyperfine_1.20.0_amd64.deb
+          sudo dpkg -i hyperfine.deb
+
+      - name: Run benchmark smoke
+        run: zsh scripts/bench/run.zsh --smoke
