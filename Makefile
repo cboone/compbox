@@ -12,7 +12,7 @@ format-check: ## Check formatting with Prettier
 	npx prettier@3.8.1 --check .
 
 test: ## Run scrut tests
-	scrut test --shell zsh tests/*.md
+	@if [ -d tests ] && ls tests/*.md >/dev/null 2>&1; then scrut test --shell zsh tests/*.md; else echo "No test files found, skipping."; fi
 
 spell: ## Run spell check
 	npx cspell@9.7.0 --dot .
