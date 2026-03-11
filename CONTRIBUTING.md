@@ -17,6 +17,18 @@ Please note that this project has a [Code of Conduct](CODE_OF_CONDUCT.md). By pa
 - zsh 5.9+
 - tmux
 
+### Development Tools
+
+Install all tools used by `make check-zsh`, `make format-zsh`, and `make bench`:
+
+- [shellcheck](https://www.shellcheck.net/): `brew install shellcheck`
+- [shfmt](https://github.com/mvdan/sh): `brew install shfmt`
+- [beautysh](https://github.com/lovesegfault/beautysh): `brew install beautysh`
+- [shellharden](https://github.com/antsichaut/shellharden): `brew install shellharden`
+- [checkbashisms](https://sourceforge.net/projects/checkbaskisms/): `brew install checkbashisms`
+- [hyperfine](https://github.com/sharkdp/hyperfine): `brew install hyperfine`
+- [jq](https://jqlang.github.io/jq/): `brew install jq`
+
 ### Getting Started
 
 ```bash
@@ -30,23 +42,49 @@ make lint
 # Check formatting
 make format-check
 
-# Run tests
+# Run all checks and tests
+make verify
+
+# Run tests only
 make test
 ```
 
 ### Test Dependencies
 
 Tests use [scrut](https://github.com/facebookincubator/scrut) for CLI
-snapshot testing:
+snapshot testing and [zunit](https://github.com/zunit-zsh/zunit) for zsh
+lifecycle testing:
 
 ```bash
+# scrut (required)
 cargo install --locked scrut
+
+# zunit (optional, installed automatically in CI)
+git clone https://github.com/zunit-zsh/zunit.git /tmp/zunit
+cd /tmp/zunit && sudo ./build.zsh
 ```
+
+### Available Make Targets
+
+| Target                | Description                                  |
+| --------------------- | -------------------------------------------- |
+| `make test`           | Run all tests (scrut + zunit)                |
+| `make test-scrut`     | Run scrut CLI tests                          |
+| `make test-zunit`     | Run zunit lifecycle tests                    |
+| `make check-zsh`      | Check zsh scripts for syntax and lint issues |
+| `make format-zsh`     | Format zsh scripts with shfmt and beautysh   |
+| `make verify`         | Run checks and tests                         |
+| `make bench`          | Run benchmarks                               |
+| `make bench-baseline` | Capture benchmark baseline                   |
+| `make lint`           | Run all linters                              |
+| `make format`         | Format Markdown, JSON, and YAML files        |
+| `make help`           | Show all available targets                   |
 
 ## Code Style
 
-- Run `make lint` before committing
+- Run `make verify` before committing
 - Run `make format` to format Markdown, JSON, and YAML files
+- Run `make format-zsh` to format zsh scripts
 
 ## Commit Messages
 
