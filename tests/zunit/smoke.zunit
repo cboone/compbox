@@ -1,0 +1,38 @@
+#!/usr/bin/env zunit
+
+@setup {
+  load "helpers/bootstrap.zsh"
+}
+
+@teardown {
+  if (( ${+functions[cbx_reset]} )); then
+    cbx_reset
+  fi
+}
+
+@test 'bootstrap defines helper functions' {
+  assert "(( ${+functions[cbx_load_plugin]} ))" same_as "(( 1 ))"
+  assert "(( ${+functions[cbx_reset]} ))" same_as "(( 1 ))"
+}
+
+@test 'bootstrap resolves project root' {
+  assert "${CBX_PROJECT_ROOT}" is_not_empty
+  run test -d "${CBX_PROJECT_ROOT}"
+  assert $state equals 0
+}
+
+@test 'reset clears plugin functions' {
+  function cbx_test_dummy() { echo "dummy"; }
+  assert "$(typeset -f cbx_test_dummy 2>/dev/null)" is_not_empty
+
+  cbx_reset
+
+  run typeset -f cbx_test_dummy 2>/dev/null
+  assert "$output" is_empty
+}
+
+@test 'basic assertion plumbing works' {
+  run echo "hello from zunit"
+  assert $state equals 0
+  assert "$output" same_as "hello from zunit"
+}
