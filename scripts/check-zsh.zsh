@@ -111,10 +111,19 @@ function has_main_call() {
   grep -qE '^main "\$\{@\}"' "${file}" 2>/dev/null
 }
 
+function is_bench_fixture() {
+  local file="${1}"
+  [[ "${file}" = */scripts/bench/fixtures/* ]]
+}
+
 function run_setopt_warnings() {
   local file="${1}"
   # Skip executable scripts: sourcing them would run main().
   if has_main_call "${file}"; then
+    return 0
+  fi
+  # Skip bench fixtures: sourcing them runs compinit and other side effects.
+  if is_bench_fixture "${file}"; then
     return 0
   fi
   # || true: returns non-zero if source encounters warnings; ERR_EXIT would
