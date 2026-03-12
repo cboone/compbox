@@ -50,13 +50,14 @@ function main() {
     local rel="${file#${PROJECT_ROOT}/}"
     print "Formatting ${rel}..."
 
-    # shfmt first (stricter parser).
-    shfmt -i 2 -w -ln zsh "${file}" 2>/dev/null || {
-      print "  shfmt could not parse, falling back to beautysh"
-    }
-
-    # beautysh second.
-    beautysh "${file}" >/dev/null 2>&1 || true
+    # shfmt is the primary formatter; beautysh is the fallback for files
+    # shfmt's experimental zsh mode can't parse (e.g., glob qualifiers).
+    if shfmt -i 2 -w -ln zsh "${file}" 2>/dev/null; then
+      : # shfmt formatted successfully
+    else
+      print "  shfmt could not parse, formatting with beautysh"
+      beautysh "${file}" >/dev/null 2>&1 || true
+    fi
 
     # Verify no syntax errors introduced.
     if ! zsh -n "${file}" 2>/dev/null; then

@@ -34,8 +34,8 @@ function extract_stats() {
   median="$(jq -r ".results[] | select(.command | contains(\"${scenario}\")) | .median" "${json_file}")"
   # hyperfine exports times array; compute p95 from sorted times.
   p95="$(jq -r "
-    .results[] | select(.command | contains(\"${scenario}\")) |
-    .times | sort | .[((length * 0.95) | floor)]
+  .results[] | select(.command | contains(\"${scenario}\")) |
+  .times | sort | .[((length * 0.95) | floor)]
   " "${json_file}")"
 
   printf "scenario=%-20s p50=%.4f p95=%.4f\n" "${scenario}" "${median}" "${p95}"
@@ -69,23 +69,23 @@ function main() {
   local mode="full"
   local runs="${DEFAULT_RUNS}"
 
-  if (( ${#} > 0 )); then
+  if ((${#} > 0)); then
     case "${1}" in
-      --baseline)
-        mode="baseline"
-        ;;
-      --smoke)
-        mode="smoke"
-        runs="${SMOKE_RUNS}"
-        ;;
-      --help|-h)
-        print "Usage: ${0:t} [--baseline|--smoke|--help]"
-        return 0
-        ;;
-      *)
-        print "Unknown option: ${1}" >&2
-        return 1
-        ;;
+    --baseline)
+      mode="baseline"
+      ;;
+    --smoke)
+      mode="smoke"
+      runs="${SMOKE_RUNS}"
+      ;;
+    --help | -h)
+      print "Usage: ${0:t} [--baseline|--smoke|--help]"
+      return 0
+      ;;
+    *)
+      print "Unknown option: ${1}" >&2
+      return 1
+      ;;
     esac
   fi
 

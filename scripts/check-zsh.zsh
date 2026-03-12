@@ -10,6 +10,8 @@
 #   6. setopt warnings (variable scope)
 #   7. shfmt           (formatting)
 #   8. beautysh        (formatting)
+#
+# Exits non-zero if any tool produces findings.
 
 emulate -L zsh
 setopt ERR_EXIT NO_UNSET PIPE_FAIL
@@ -87,8 +89,8 @@ function run_shellcheck() {
   local file="${1}"
   # shellcheck does not support --shell=zsh; use --shell=bash with
   # zsh-specific SC codes excluded via SHELLCHECK_EXCLUDE.
-  # Returns non-zero when warnings are found; || true prevents ERR_EXIT
-  # from terminating the script since warnings are advisory, not fatal.
+  # || true: returns non-zero when warnings exist; ERR_EXIT would
+  # terminate the script before we can capture and report findings.
   shellcheck --shell=bash --severity=warning --exclude="${SHELLCHECK_EXCLUDE}" "${file}" 2>&1 || true
 }
 
@@ -96,17 +98,17 @@ function run_checkbashisms() {
   local file="${1}"
   # Filter "does not appear to be a /bin/sh script; skipping" since all our
   # scripts use #!/usr/bin/env zsh and this message is expected noise.
-  # || true handles both checkbashisms' non-zero exit when findings exist
+  # || true: handles both checkbashisms' non-zero exit when findings exist
   # and grep returning 1 when filtering removes all output.
   checkbashisms "${file}" 2>&1 | grep -v "does not appear to be a /bin/sh script" || true
 }
 
 function run_shellharden() {
   local file="${1}"
-  # --check returns non-zero if suggestions exist; || true prevents ERR_EXIT
-  # from terminating the script since suggestions are advisory.
   # Only report the check result; --suggest dumps the entire file with ANSI
   # color codes, which is too verbose for automated output.
+  # || true: returns non-zero when suggestions exist; ERR_EXIT would
+  # terminate the script before we can capture and report findings.
   shellharden --check "${file}" 2>&1 || true
 }
 
@@ -123,23 +125,9 @@ function run_setopt_warnings() {
   if has_main_call "${file}"; then
     return 0
   fi
-  # Returns non-zero if source fails; || true prevents ERR_EXIT from
-  # terminating the script since scope warnings are advisory.
+  # || true: returns non-zero if source encounters warnings; ERR_EXIT would
+  # terminate the script before we can capture and report findings.
   zsh -c 'emulate -L zsh; setopt warn_create_global warn_nested_var; source "'"${file}"'"' 2>&1 || true
-}
-
-function run_shfmt() {
-  local file="${1}"
-  # Returns non-zero when formatting differs; || true prevents ERR_EXIT
-  # from terminating the script since formatting diffs are advisory.
-  shfmt -i 2 -ln zsh -d "${file}" 2>&1 || true
-}
-
-function run_beautysh() {
-  local file="${1}"
-  # Returns non-zero when formatting differs; || true prevents ERR_EXIT
-  # from terminating the script since formatting diffs are advisory.
-  beautysh --check "${file}" 2>&1 || true
 }
 
 function main() {
@@ -155,7 +143,7 @@ function main() {
 
   local exit_code=0
   local file rel
-  local syntax_output compile_output sc_output cb_output sh_output setopt_output fmt_output bs_output
+  local syntax_output compile_output sc_output cb_output sh_output setopt_output fmt_output bs_output shfmt_exit
 
   for file in "${zsh_files[@]}"; do
     [[ -z "${file}" ]] && continue
@@ -180,36 +168,50 @@ function main() {
     sc_output="$(run_shellcheck "${file}" 2>&1)"
     if [[ -n "${sc_output}" ]]; then
       print_indented "shellcheck" "${sc_output}"
+      exit_code=1
     fi
 
     # 4. checkbashisms.
     cb_output="$(run_checkbashisms "${file}" 2>&1)"
     if [[ -n "${cb_output}" ]]; then
       print_indented "checkbashisms" "${cb_output}"
+      exit_code=1
     fi
 
     # 5. shellharden.
     sh_output="$(run_shellharden "${file}" 2>&1)"
     if [[ -n "${sh_output}" ]]; then
       print_indented "shellharden" "${sh_output}"
+      exit_code=1
     fi
 
     # 6. setopt warnings (variable scope).
     setopt_output="$(run_setopt_warnings "${file}" 2>&1)"
     if [[ -n "${setopt_output}" ]]; then
       print_indented "setopt warnings" "${setopt_output}"
+      exit_code=1
     fi
 
-    # 7. shfmt.
-    fmt_output="$(run_shfmt "${file}" 2>&1)"
-    if [[ -n "${fmt_output}" ]]; then
-      print_indented "shfmt" "${fmt_output}"
-    fi
-
-    # 8. beautysh.
-    bs_output="$(run_beautysh "${file}" 2>&1)"
-    if [[ -n "${bs_output}" ]]; then
-      print_indented "beautysh" "${bs_output}"
+    # 7/8. shfmt or beautysh (mutually exclusive per file).
+    # shfmt is the primary formatter; beautysh is the fallback for files
+    # shfmt's experimental zsh mode can't parse (e.g., glob qualifiers).
+    shfmt_exit=0
+    fmt_output="$(shfmt -i 2 -ln zsh -d "${file}" 2>/dev/null)" || shfmt_exit=$?
+    if (( shfmt_exit == 0 )) || [[ -n "${fmt_output}" ]]; then
+      # shfmt can parse this file. Report any formatting diffs.
+      if [[ -n "${fmt_output}" ]]; then
+        print_indented "shfmt" "${fmt_output}"
+        exit_code=1
+      fi
+    else
+      # shfmt can't parse this file; check with beautysh instead.
+      # || true: returns non-zero when formatting differs; ERR_EXIT would
+      # terminate the script before we can capture and report findings.
+      bs_output="$(beautysh --check "${file}" 2>&1)" || true
+      if [[ -n "${bs_output}" ]]; then
+        print_indented "beautysh" "${bs_output}"
+        exit_code=1
+      fi
     fi
   done
 
