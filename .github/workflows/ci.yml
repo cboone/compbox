@@ -105,8 +105,8 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/zunit-zsh/zunit.git /tmp/zunit
           cd /tmp/zunit
-          sudo ./build.zsh
-          sudo chmod +x /usr/local/bin/zunit
+          ./build.zsh
+          sudo install -m 755 zunit /usr/local/bin/zunit
 
       - name: Run zunit tests
         run: make test-zunit
