@@ -101,8 +101,12 @@ jobs:
       - name: Install zsh
         run: sudo apt-get update && sudo apt-get install -y zsh
 
-      - name: Install zunit
+      - name: Install zunit and dependencies
         run: |
+          curl -fsSL -o /tmp/revolver https://raw.githubusercontent.com/molovo/revolver/master/revolver
+          sudo install -m 755 /tmp/revolver /usr/local/bin/revolver
+          curl -fsSL -o /tmp/color https://raw.githubusercontent.com/molovo/color/master/color.zsh
+          sudo install -m 755 /tmp/color /usr/local/bin/color
           git clone --depth 1 https://github.com/zunit-zsh/zunit.git /tmp/zunit
           cd /tmp/zunit
           ./build.zsh
