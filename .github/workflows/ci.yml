@@ -87,14 +87,35 @@ jobs:
       - name: Install zsh
         run: sudo apt-get update && sudo apt-get install -y zsh
 
-      - name: Install zunit and dependencies
+      - name: Install revolver
+        env:
+          COMMIT: "6424e6cb14da38dc5d7760573eb6ecb2438e9661"
+          SHA256: "ad2a753561b9c603b6bd16f59b40799a33d747cc8468d6e6da4078abb974f845"
         run: |
-          curl -fsSL -o /tmp/revolver https://raw.githubusercontent.com/molovo/revolver/master/revolver
-          sudo install -m 755 /tmp/revolver /usr/local/bin/revolver
-          curl -fsSL -o /tmp/color https://raw.githubusercontent.com/molovo/color/master/color.zsh
-          sudo install -m 755 /tmp/color /usr/local/bin/color
-          git clone --depth 1 https://github.com/zunit-zsh/zunit.git /tmp/zunit
+          curl -sSfL -o revolver \
+            "https://raw.githubusercontent.com/molovo/revolver/${COMMIT}/revolver"
+          echo "${SHA256}  revolver" | sha256sum --check
+          sudo install -m 755 revolver /usr/local/bin/revolver
+
+      - name: Install color
+        env:
+          COMMIT: "57c9cd51c0495a3faffb203c8db74e0f60f3db73"
+          SHA256: "5b783553195fc194210a3d181a563a4632a8f1307c3c85d15b1c6af047977522"
+        run: |
+          curl -sSfL -o color.zsh \
+            "https://raw.githubusercontent.com/molovo/color/${COMMIT}/color.zsh"
+          echo "${SHA256}  color.zsh" | sha256sum --check
+          sudo install -m 755 color.zsh /usr/local/bin/color
+
+      - name: Install zunit
+        env:
+          VERSION: "0.8.2"
+          COMMIT: "bce183c39a3b51a3dd838835516a37222aad921f"
+        run: |
+          git clone --branch "v${VERSION}" --depth 1 \
+            https://github.com/zunit-zsh/zunit.git /tmp/zunit
           cd /tmp/zunit
+          test "$(git rev-parse HEAD)" = "${COMMIT}"
           ./build.zsh
           sudo install -m 755 zunit /usr/local/bin/zunit
 
