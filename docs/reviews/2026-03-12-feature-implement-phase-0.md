@@ -152,11 +152,11 @@ None. The implementation matches the plan's intent closely, including the opt-in
 
 #### Potential Issues
 
-1. **`find_zsh_files` duplication**: The `find_zsh_files` function is duplicated between `check-zsh.zsh` and `format-zsh.zsh`. If the glob patterns diverge, one script could operate on a different file set than the other. Low severity since both currently use identical patterns.
+1. **`find_zsh_files` shared utility**: The `find_zsh_files` function is extracted into `scripts/lib/find-zsh-files.zsh` and sourced by both `check-zsh.zsh` and `format-zsh.zsh`, ensuring both scripts always operate on the same file set.
 
 2. **`run_setopt_warnings` command injection surface**: The `source` command in `run_setopt_warnings` embeds the file path directly in a string passed to `zsh -c`. This is safe in practice because the paths come from `find_zsh_files` which glob-expands project-local patterns, but paths with single quotes would break the quoting. This is a theoretical concern for this project (no filenames with quotes), not a practical one.
 
-3. **`extract_stats` jq p95 calculation**: The p95 computation uses `floor` on `length * 0.95`, which means for arrays shorter than 20 elements (like the 10-iteration smoke run), the index could be imprecise. For the smoke case this is acceptable since the values are not used for comparison. For the 100-iteration baseline, the index is accurate.
+3. **`extract_stats` jq p95 calculation**: The p95 computation uses `ceil` on `length * 0.95`, then subtracts 1 and clamps to the last array element. For very short arrays (like the 10-iteration smoke run), this can pick a slightly higher element than a `floor`-based definition would, but the value is well-defined and acceptable since smoke results are not compared across runs. For the 100-iteration baseline, the percentile index behaves as expected.
 
 4. **Benchmark `smoke` and `baseline` scenarios are identical**: Both modes configure the same two scenarios (`stock-completion` and `noop-plugin-startup`). The only difference is iteration count (10 vs 100). This is likely intentional to keep smoke fast while ensuring it exercises the same code paths, but it means smoke does not actually test a "small fixture set" vs. a larger one. The difference is purely iteration count.
 
@@ -187,6 +187,4 @@ None blocking. The code is clean and well-structured.
 
 **Suggestions**:
 
-1. Consider extracting `find_zsh_files` into a shared utility if the glob patterns need to stay synchronized across check-zsh and format-zsh.
-2. The `run_setopt_warnings` function could use `${(q)file}` for safer quoting in the `zsh -c` string, though this is not a practical risk today.
-3. In a future phase, the `smoke` and `baseline` benchmark modes could diverge in scenario selection rather than just iteration count, to make the distinction more meaningful.
+1. In a future phase, the `smoke` and `baseline` benchmark modes could diverge in scenario selection rather than just iteration count, to make the distinction more meaningful.

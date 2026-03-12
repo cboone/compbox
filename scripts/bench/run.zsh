@@ -56,24 +56,24 @@ function configure_scenarios() {
   case "${mode}" in
   baseline)
     BENCH_SCENARIO_NAMES+=("stock-completion")
-    BENCH_SCENARIO_COMMANDS+=("zsh ${FIXTURES_DIR:q}/stock-completion.zsh")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
     BENCH_SCENARIO_NAMES+=("noop-plugin-startup")
-    BENCH_SCENARIO_COMMANDS+=("zsh ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
     ;;
   smoke)
     # Small fixture set for CI smoke validation.
     BENCH_SCENARIO_NAMES+=("stock-completion")
-    BENCH_SCENARIO_COMMANDS+=("zsh ${FIXTURES_DIR:q}/stock-completion.zsh")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
     BENCH_SCENARIO_NAMES+=("noop-plugin-startup")
-    BENCH_SCENARIO_COMMANDS+=("zsh ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
     ;;
   full)
     BENCH_SCENARIO_NAMES+=("stock-zsh")
-    BENCH_SCENARIO_COMMANDS+=("zsh -c 'exit'")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f -c 'exit'")
     BENCH_SCENARIO_NAMES+=("stock-completion")
-    BENCH_SCENARIO_COMMANDS+=("zsh ${FIXTURES_DIR:q}/stock-completion.zsh")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
     BENCH_SCENARIO_NAMES+=("noop-plugin-startup")
-    BENCH_SCENARIO_COMMANDS+=("zsh ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
     ;;
   *)
     print "Unknown benchmark mode: ${mode}" >&2
