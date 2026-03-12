@@ -23,7 +23,6 @@ Install all tools used by `make check-zsh`, `make format-zsh`, and `make bench`:
 
 - [shellcheck](https://www.shellcheck.net/): `brew install shellcheck`
 - [shfmt](https://github.com/mvdan/sh): `brew install shfmt`
-- [beautysh](https://github.com/lovesegfault/beautysh): `brew install beautysh`
 - [shellharden](https://github.com/anordal/shellharden): `brew install shellharden`
 - [checkbashisms](https://tracker.debian.org/pkg/devscripts): `brew install checkbashisms`
 - [hyperfine](https://github.com/sharkdp/hyperfine): `brew install hyperfine`
@@ -72,7 +71,7 @@ cd /tmp/zunit && sudo ./build.zsh
 | `make test-scrut`     | Run scrut CLI tests                          |
 | `make test-zunit`     | Run zunit lifecycle tests                    |
 | `make check-zsh`      | Check zsh scripts for syntax and lint issues |
-| `make format-zsh`     | Format zsh scripts with shfmt and beautysh   |
+| `make format-zsh`     | Format zsh scripts with shfmt                |
 | `make verify`         | Run checks and tests                         |
 | `make bench`          | Run benchmarks                               |
 | `make bench-baseline` | Capture benchmark baseline                   |

@@ -1,9 +1,9 @@
 #!/usr/bin/env zsh
-# format-zsh.zsh -- Format zsh scripts using shfmt and beautysh.
+# format-zsh.zsh -- Format zsh scripts using shfmt.
 #
-# Runs shfmt first (stricter parser), then beautysh for anything shfmt
-# could not parse. Re-runs zsh -n after formatting to verify no new
-# syntax errors were introduced.
+# Files that shfmt's experimental zsh mode can't parse (e.g., those with
+# glob qualifiers) are skipped. Re-runs zsh -n after formatting to verify
+# no new syntax errors were introduced.
 
 emulate -L zsh
 setopt ERR_EXIT NO_UNSET PIPE_FAIL
@@ -20,15 +20,8 @@ function find_zsh_files() {
 }
 
 function require_tools() {
-  local -a missing=()
-  local tool
-  for tool in shfmt beautysh; do
-    if ! command -v "${tool}" >/dev/null 2>&1; then
-      missing+=("${tool}")
-    fi
-  done
-  if (( ${#missing[@]} > 0 )); then
-    print "Error: required tools not found: ${(j:, :)missing}" >&2
+  if ! command -v shfmt >/dev/null 2>&1; then
+    print "Error: shfmt not found" >&2
     return 1
   fi
 }
@@ -50,13 +43,10 @@ function main() {
     local rel="${file#${PROJECT_ROOT}/}"
     print "Formatting ${rel}..."
 
-    # shfmt is the primary formatter; beautysh is the fallback for files
-    # shfmt's experimental zsh mode can't parse (e.g., glob qualifiers).
     if shfmt -i 2 -w -ln zsh "${file}" 2>/dev/null; then
       : # shfmt formatted successfully
     else
-      print "  shfmt could not parse, formatting with beautysh"
-      beautysh "${file}" >/dev/null 2>&1 || true
+      print "  shfmt could not parse, skipping"
     fi
 
     # Verify no syntax errors introduced.

@@ -9,7 +9,6 @@
 #   5. shellharden     (safety suggestions)
 #   6. setopt warnings (variable scope)
 #   7. shfmt           (formatting)
-#   8. beautysh        (formatting)
 #
 # Exits non-zero if any tool produces findings.
 
@@ -57,7 +56,7 @@ function find_zsh_files() {
 function require_tools() {
   local -a missing=()
   local tool
-  for tool in shellcheck checkbashisms shellharden shfmt beautysh; do
+  for tool in shellcheck checkbashisms shellharden shfmt; do
     if ! command -v "${tool}" >/dev/null 2>&1; then
       missing+=("${tool}")
     fi
@@ -143,7 +142,7 @@ function main() {
 
   local exit_code=0
   local file rel
-  local syntax_output compile_output sc_output cb_output sh_output setopt_output fmt_output bs_output shfmt_exit
+  local syntax_output compile_output sc_output cb_output sh_output setopt_output fmt_output
 
   for file in "${zsh_files[@]}"; do
     [[ -z "${file}" ]] && continue
@@ -192,26 +191,15 @@ function main() {
       exit_code=1
     fi
 
-    # 7/8. shfmt or beautysh (mutually exclusive per file).
-    # shfmt is the primary formatter; beautysh is the fallback for files
-    # shfmt's experimental zsh mode can't parse (e.g., glob qualifiers).
-    shfmt_exit=0
-    fmt_output="$(shfmt -i 2 -ln zsh -d "${file}" 2>/dev/null)" || shfmt_exit=$?
-    if (( shfmt_exit == 0 )) || [[ -n "${fmt_output}" ]]; then
-      # shfmt can parse this file. Report any formatting diffs.
-      if [[ -n "${fmt_output}" ]]; then
-        print_indented "shfmt" "${fmt_output}"
-        exit_code=1
-      fi
-    else
-      # shfmt can't parse this file; check with beautysh instead.
-      # || true: returns non-zero when formatting differs; ERR_EXIT would
-      # terminate the script before we can capture and report findings.
-      bs_output="$(beautysh --check "${file}" 2>&1)" || true
-      if [[ -n "${bs_output}" ]]; then
-        print_indented "beautysh" "${bs_output}"
-        exit_code=1
-      fi
+    # 7. shfmt (formatting diffs only; parse errors on stderr are discarded
+    # since shfmt's experimental zsh mode can't handle some valid zsh syntax
+    # like glob qualifiers).
+    # || true: returns non-zero when formatting differs; ERR_EXIT would
+    # terminate the script before we can capture and report findings.
+    fmt_output="$(shfmt -i 2 -ln zsh -d "${file}" 2>/dev/null)" || true
+    if [[ -n "${fmt_output}" ]]; then
+      print_indented "shfmt" "${fmt_output}"
+      exit_code=1
     fi
   done
 

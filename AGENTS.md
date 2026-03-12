@@ -12,7 +12,7 @@ Always use these skills when working on their respective file types:
 
 - **write-zsh-scripts**: Use when creating or editing any `.zsh` file, including plugin source files in `lib/`, test helpers, and scripts.
 - **write-scrut-tests**: Use when creating or editing scrut test files in `tests/scrut/`. Most guidance applies to zsh-based scrut tests, though the skill was written for bash.
-- **check-zsh**: Use after modifying zsh scripts to validate them. Runs 8 tools: `zsh -n`, `zcompile`, `shellcheck`, `checkbashisms`, `shellharden`, `setopt warnings`, `shfmt`, and `beautysh`.
+- **check-zsh**: Use after modifying zsh scripts to validate them. Runs 7 tools: `zsh -n`, `zcompile`, `shellcheck`, `checkbashisms`, `shellharden`, `setopt warnings`, and `shfmt`.
 - **write-markdown**: Use when creating or editing Markdown files.
 
 ### Validation
@@ -57,7 +57,7 @@ docs/plans/                   Implementation plans
 | `make test`         | Run all tests (scrut + zunit) |
 | `make test-scrut`   | Run scrut CLI tests           |
 | `make test-zunit`   | Run zunit lifecycle tests     |
-| `make check-zsh`    | Check zsh scripts (8 tools)   |
+| `make check-zsh`    | Check zsh scripts (7 tools)   |
 | `make format-zsh`   | Format zsh scripts            |
 | `make verify`       | Run checks and tests          |
 | `make bench`        | Run benchmarks                |

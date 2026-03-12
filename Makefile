@@ -25,7 +25,7 @@ test-zunit: ## Run zunit tests
 check-zsh: ## Check zsh scripts for syntax and lint issues
 	zsh scripts/check-zsh.zsh
 
-format-zsh: ## Format zsh scripts with shfmt and beautysh
+format-zsh: ## Format zsh scripts with shfmt
 	zsh scripts/format-zsh.zsh
 
 verify: check-zsh test ## Run checks and tests

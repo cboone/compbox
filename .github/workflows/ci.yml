@@ -59,9 +59,6 @@ jobs:
           tar xzf shellharden.tar.gz
           sudo mv shellharden /usr/local/bin/
 
-      - name: Install beautysh
-        run: pip install beautysh
-
       - name: Run zsh checks
         run: make check-zsh
 
