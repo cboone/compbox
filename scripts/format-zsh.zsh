@@ -13,7 +13,7 @@ readonly PROJECT_ROOT="${0:A:h:h}"
 function find_zsh_files() {
   local -a files=()
   local pattern
-  for pattern in "lib/**/*.zsh" "scripts/**/*.zsh" "tests/helpers/**/*.zsh" "tests/zunit/helpers/**/*.zsh" "*.plugin.zsh"; do
+  for pattern in "lib/**/*.zsh" "scripts/**/*.zsh" "tests/helpers/**/*.zsh" "tests/fixtures/**/*.zsh" "tests/zunit/helpers/**/*.zsh" "*.plugin.zsh"; do
     files+=("${PROJECT_ROOT}"/${~pattern}(N))
   done
   print -l "${files[@]}"

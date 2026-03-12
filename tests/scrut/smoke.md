@@ -2,12 +2,21 @@
 
 Verify the test harness bootstraps correctly and helper functions work.
 
-## Harness loads with deterministic source order
+## Harness loads plugin files in deterministic order
 
 ```scrut
 $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   echo "sources: ${#CBX_PLUGIN_SOURCES[@]}"
-sources: 0
+sources: 4
+```
+
+```scrut
+$ source "${TESTDIR}/../helpers/setup.zsh" &&
+>   cbx_test_setup &&
+>   printf '%s\n' "${CBX_TEST_LOADED_SOURCES[@]}"
+10-record-first
+20-record-second
+30-record-options
 ```
 
 ```scrut
@@ -17,21 +26,25 @@ $ source "${TESTDIR}/../helpers/setup.zsh" &&
 project root: exists
 ```
 
-## Helper sets up and resets global state
+## Helper setup enables strict loading and reset clears globals
 
 ```scrut
 $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   cbx_test_setup &&
->   echo "setup: ok"
-setup: ok
+>   echo "strict options: ${CBX_TEST_PLUGIN_STRICT_OPTIONS}"
+strict options: on
 ```
 
 ```scrut
 $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   cbx_test_setup &&
+>   echo "global before reset: ${CBX_TEST_TMP_GLOBAL}" &&
 >   cbx_test_reset &&
->   echo "reset: ok"
-reset: ok
+>   [[ -n "${CBX_TEST_TMP_GLOBAL-}" ]] &&
+>   echo "global after reset: set" ||
+>   echo "global after reset: cleared"
+global before reset: set-by-first-fixture
+global after reset: cleared
 ```
 
 ## Reset clears functions matching plugin patterns
@@ -49,13 +62,37 @@ before: defined
 after: cleared
 ```
 
+## Benchmark timing hooks are opt-in with CBX_BENCH
+
+```scrut
+$ source "${TESTDIR}/../helpers/setup.zsh" &&
+>   cbx_test_setup &&
+>   cbx_bench_mark "startup" &&
+>   (( ${+CBX_BENCH_MARKS} )) &&
+>   echo "bench vars: set" ||
+>   echo "bench vars: unset"
+bench vars: unset
+```
+
+```scrut
+$ source "${TESTDIR}/../helpers/setup.zsh" &&
+>   cbx_test_setup &&
+>   export CBX_BENCH=1 &&
+>   source "${CBX_PROJECT_ROOT}/lib/bench/timing.zsh" &&
+>   cbx_bench_mark "startup" &&
+>   (( ${+CBX_BENCH_MARKS[startup]} )) &&
+>   echo "bench vars: set" &&
+>   unset CBX_BENCH
+bench vars: set
+```
+
 ## Benchmark report line format is parseable
 
 ```scrut
-$ echo "scenario=noop p50=0.003 p95=0.005 iterations=100" |
+$ echo "scenario=noop-plugin-startup p50=0.0030 p95=0.0050 iterations=100" |
 >   tr ' ' '\n'
-scenario=noop
-p50=0.003
-p95=0.005
+scenario=noop-plugin-startup
+p50=0.0030
+p95=0.0050
 iterations=100
 ```

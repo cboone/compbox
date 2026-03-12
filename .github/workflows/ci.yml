@@ -133,4 +133,10 @@ jobs:
           sudo dpkg -i hyperfine.deb
 
       - name: Run benchmark smoke
-        run: zsh scripts/bench/run.zsh --smoke
+        run: zsh scripts/bench/run.zsh --smoke --json-out "${RUNNER_TEMP}/bench-smoke.json"
+
+      - name: Upload benchmark smoke artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-smoke-json
+          path: ${{ runner.temp }}/bench-smoke.json

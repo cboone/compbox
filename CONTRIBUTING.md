@@ -63,6 +63,21 @@ git clone https://github.com/zunit-zsh/zunit.git /tmp/zunit
 cd /tmp/zunit && sudo ./build.zsh
 ```
 
+### Benchmark Instrumentation
+
+Internal timing hooks are opt-in. Set `CBX_BENCH=1` before sourcing plugin files
+to enable benchmark helpers such as `cbx_bench_mark`,
+`cbx_bench_record_elapsed`, and `cbx_bench_report`.
+
+Leave `CBX_BENCH` unset for normal development and runtime paths so timing
+state is not created.
+
+### Benchmark Artifacts
+
+- `make bench-baseline` writes `benchmarks/baseline.json` for local comparison.
+- Benchmark JSON files under `benchmarks/` are intentionally gitignored.
+- CI smoke benchmarks upload a `bench-smoke-json` artifact for each run.
+
 ### Available Make Targets
 
 | Target                | Description                                  |

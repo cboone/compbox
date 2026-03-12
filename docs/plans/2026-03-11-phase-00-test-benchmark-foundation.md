@@ -46,13 +46,13 @@ behavior with immediate automated feedback.
 ### Benchmark harness
 
 1. Create benchmark driver script under `scripts/bench/`.
-1. Add baseline scenario definitions and report format (p50, p95).
+1. Add baseline scenario definitions and report format (p50, p95, iterations).
 1. Add opt-in timing flag design (`CBX_BENCH=1`) with no runtime overhead when off.
 
 ### CI
 
 1. Install and run Scrut and zunit.
-1. Run `make check-zsh` and `make test` on PRs.
+1. Run `make check-zsh`, `make test-scrut`, and `make test-zunit` on PRs.
 1. Run a fast benchmark smoke path in CI (small fixture set only).
 
 ## File-Level Plan
@@ -60,12 +60,15 @@ behavior with immediate automated feedback.
 ### Create
 
 1. `tests/helpers/setup.zsh`
-1. `tests/smoke.md`
+1. `tests/scrut/smoke.md`
 1. `tests/zunit/helpers/bootstrap.zsh`
 1. `tests/zunit/smoke.zunit`
+1. `tests/fixtures/plugins/*.zsh`
 1. `scripts/check-zsh.zsh`
 1. `scripts/format-zsh.zsh`
 1. `scripts/bench/run.zsh`
+1. `scripts/bench/fixtures/*.zsh`
+1. `lib/bench/timing.zsh`
 
 ### Modify
 
@@ -89,7 +92,7 @@ behavior with immediate automated feedback.
 
 1. Add baseline command comparing stock completion and no-op plugin shell startup.
 1. Track median and p95 for at least 100 iterations per scenario in local runs.
-1. Persist baseline output artifact under `benchmarks/` for future comparisons.
+1. Persist baseline output locally under `benchmarks/` and upload CI smoke JSON artifacts.
 
 ## Acceptance Checklist
 

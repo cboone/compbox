@@ -16,12 +16,27 @@ if [[ -z "${CBX_ZUNIT_ROOT:-}" ]]; then
 
   # Plugin source files loaded in deterministic order.
   # Add files here as they are created in later phases.
-  typeset -ga CBX_PLUGIN_SOURCES=()
+  typeset -ga CBX_PLUGIN_SOURCES=(
+    "lib/bench/timing.zsh"
+    "tests/fixtures/plugins/10-record-first.zsh"
+    "tests/fixtures/plugins/20-record-second.zsh"
+    "tests/fixtures/plugins/30-record-options.zsh"
+  )
+
+  typeset -ga CBX_TEST_GLOBALS_TO_RESET=(
+    CBX_TEST_LOADED_SOURCES
+    CBX_TEST_TMP_GLOBAL
+    CBX_TEST_PLUGIN_STRICT_OPTIONS
+    CBX_BENCH_MARKS
+    CBX_BENCH_TIMINGS
+  )
 fi
 
 function cbx_load_plugin() {
   emulate -L zsh
   setopt ERR_EXIT NO_UNSET PIPE_FAIL
+
+  typeset -ga CBX_TEST_LOADED_SOURCES=()
 
   local src
   for src in "${CBX_PLUGIN_SOURCES[@]}"; do
@@ -42,5 +57,8 @@ function cbx_reset() {
   done
 
   # Clear globals introduced by plugin code.
-  # Add variable cleanup here as globals are introduced in later phases.
+  local var
+  for var in "${CBX_TEST_GLOBALS_TO_RESET[@]}"; do
+    unset "${var}" 2>/dev/null
+  done
 }
