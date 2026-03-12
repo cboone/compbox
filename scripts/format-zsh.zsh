@@ -19,18 +19,22 @@ function find_zsh_files() {
   print -l "${files[@]}"
 }
 
-function main() {
-  local has_shfmt=0
-  local has_beautysh=0
-  command -v shfmt >/dev/null 2>&1 && has_shfmt=1
-  command -v beautysh >/dev/null 2>&1 && has_beautysh=1
-
-  if (( ! has_shfmt && ! has_beautysh )); then
-    print "Neither shfmt nor beautysh found." >&2
-    print "  brew install shfmt" >&2
-    print "  brew install beautysh" >&2
+function require_tools() {
+  local -a missing=()
+  local tool
+  for tool in shfmt beautysh; do
+    if ! command -v "${tool}" >/dev/null 2>&1; then
+      missing+=("${tool}")
+    fi
+  done
+  if (( ${#missing[@]} > 0 )); then
+    print "Error: required tools not found: ${(j:, :)missing}" >&2
     return 1
   fi
+}
+
+function main() {
+  require_tools
 
   local -a zsh_files=()
   zsh_files=("${(@f)$(find_zsh_files)}")
@@ -47,16 +51,12 @@ function main() {
     print "Formatting ${rel}..."
 
     # shfmt first (stricter parser).
-    if (( has_shfmt )); then
-      shfmt -i 2 -w -ln zsh "${file}" 2>/dev/null || {
-        print "  shfmt could not parse, falling back to beautysh"
-      }
-    fi
+    shfmt -i 2 -w -ln zsh "${file}" 2>/dev/null || {
+      print "  shfmt could not parse, falling back to beautysh"
+    }
 
     # beautysh second.
-    if (( has_beautysh )); then
-      beautysh "${file}" >/dev/null 2>&1 || true
-    fi
+    beautysh "${file}" >/dev/null 2>&1 || true
 
     # Verify no syntax errors introduced.
     if ! zsh -n "${file}" 2>/dev/null; then

@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 # check-zsh.zsh -- Check zsh scripts for syntax, lint, scope, and formatting issues.
 #
-# Runs each available tool in order per the check-zsh workflow:
+# Runs each tool in order per the check-zsh workflow:
 #   1. zsh -n          (syntax)
 #   2. zcompile        (compile)
 #   3. shellcheck      (static analysis)
@@ -16,10 +16,21 @@ setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
 readonly PROJECT_ROOT="${0:A:h:h}"
 
-# SC codes to filter as false positives for zsh scripts.
-# Per check-zsh skill: SC2296, SC2299 (zsh expansion flags), SC2154 (framework
-# variables), SC1090 (non-constant source), SC2039/SC3000-series (zsh features
-# flagged as non-POSIX), SC2168 (local in non-function contexts).
+# SC codes excluded as false positives when running shellcheck --shell=bash
+# on zsh scripts:
+#   SC1036  "(" unexpected: zsh glob qualifiers like (N) and (.)
+#   SC1072  Expected test expression: triggered by zsh glob qualifier syntax
+#   SC1073  Could not parse: triggered by zsh glob qualifier syntax
+#   SC1090  Non-constant source: dynamic source paths
+#   SC1091  Not following sourced file: unresolvable source paths
+#   SC2034  Variable appears unused: framework/plugin variables
+#   SC2039  Non-POSIX features: zsh builtins flagged when using --shell=bash
+#   SC2154  Variable referenced but not assigned: framework variables
+#   SC2168  local outside function: zsh allows local in broader contexts
+#   SC2206  Quote to prevent splitting: zsh does not split unquoted expansions
+#   SC2296  Parameter expansion in ${...}: zsh expansion flags
+#   SC2299  Nested ${...}: zsh nested parameter expansions
+#   SC3003-SC3057  Bashism warnings: zsh features flagged as non-POSIX
 readonly SHELLCHECK_EXCLUDE="SC1036,SC1072,SC1073,SC1090,SC1091,SC2034,SC2039,SC2154,SC2168,SC2206,SC2296,SC2299,SC3003,SC3010,SC3030,SC3037,SC3043,SC3044,SC3046,SC3054,SC3057"
 
 # Print multi-line output with indentation.
@@ -41,12 +52,18 @@ function find_zsh_files() {
   print -l "${files[@]}"
 }
 
-function check_tool() {
-  local tool="${1}"
-  if command -v "${tool}" >/dev/null 2>&1; then
-    return 0
+function require_tools() {
+  local -a missing=()
+  local tool
+  for tool in shellcheck checkbashisms shellharden shfmt beautysh; do
+    if ! command -v "${tool}" >/dev/null 2>&1; then
+      missing+=("${tool}")
+    fi
+  done
+  if (( ${#missing[@]} > 0 )); then
+    print "Error: required tools not found: ${(j:, :)missing}" >&2
+    return 1
   fi
-  return 1
 }
 
 function run_syntax_check() {
@@ -68,8 +85,10 @@ function run_zcompile() {
 
 function run_shellcheck() {
   local file="${1}"
-  # shellcheck 0.11.x does not support --shell=zsh; use --shell=bash with
-  # zsh-specific SC codes excluded.
+  # shellcheck does not support --shell=zsh; use --shell=bash with
+  # zsh-specific SC codes excluded via SHELLCHECK_EXCLUDE.
+  # Returns non-zero when warnings are found; || true prevents ERR_EXIT
+  # from terminating the script since warnings are advisory, not fatal.
   shellcheck --shell=bash --severity=warning --exclude="${SHELLCHECK_EXCLUDE}" "${file}" 2>&1 || true
 }
 
@@ -77,16 +96,18 @@ function run_checkbashisms() {
   local file="${1}"
   # Filter "does not appear to be a /bin/sh script; skipping" since all our
   # scripts use #!/usr/bin/env zsh and this message is expected noise.
+  # || true handles both checkbashisms' non-zero exit when findings exist
+  # and grep returning 1 when filtering removes all output.
   checkbashisms "${file}" 2>&1 | grep -v "does not appear to be a /bin/sh script" || true
 }
 
 function run_shellharden() {
   local file="${1}"
-  # --check returns 0 if clean, non-zero if suggestions exist.
+  # --check returns non-zero if suggestions exist; || true prevents ERR_EXIT
+  # from terminating the script since suggestions are advisory.
   # Only report the check result; --suggest dumps the entire file with ANSI
   # color codes, which is too verbose for automated output.
   shellharden --check "${file}" 2>&1 || true
-  return 0
 }
 
 function has_main_call() {
@@ -102,16 +123,22 @@ function run_setopt_warnings() {
   if has_main_call "${file}"; then
     return 0
   fi
+  # Returns non-zero if source fails; || true prevents ERR_EXIT from
+  # terminating the script since scope warnings are advisory.
   zsh -c 'emulate -L zsh; setopt warn_create_global warn_nested_var; source "'"${file}"'"' 2>&1 || true
 }
 
 function run_shfmt() {
   local file="${1}"
+  # Returns non-zero when formatting differs; || true prevents ERR_EXIT
+  # from terminating the script since formatting diffs are advisory.
   shfmt -i 2 -ln zsh -d "${file}" 2>&1 || true
 }
 
 function run_beautysh() {
   local file="${1}"
+  # Returns non-zero when formatting differs; || true prevents ERR_EXIT
+  # from terminating the script since formatting diffs are advisory.
   beautysh --check "${file}" 2>&1 || true
 }
 
@@ -124,17 +151,7 @@ function main() {
     return 0
   fi
 
-  # Check tool availability.
-  local -A tools
-  local tool
-  for tool in shellcheck checkbashisms shellharden shfmt beautysh; do
-    if check_tool "${tool}"; then
-      tools[${tool}]=1
-    else
-      tools[${tool}]=0
-      print "Warning: ${tool} not found, skipping its checks." >&2
-    fi
-  done
+  require_tools
 
   local exit_code=0
   local file rel
@@ -160,27 +177,21 @@ function main() {
     }
 
     # 3. Shellcheck.
-    if (( tools[shellcheck] )); then
-      sc_output="$(run_shellcheck "${file}" 2>&1)"
-      if [[ -n "${sc_output}" ]]; then
-        print_indented "shellcheck" "${sc_output}"
-      fi
+    sc_output="$(run_shellcheck "${file}" 2>&1)"
+    if [[ -n "${sc_output}" ]]; then
+      print_indented "shellcheck" "${sc_output}"
     fi
 
     # 4. checkbashisms.
-    if (( tools[checkbashisms] )); then
-      cb_output="$(run_checkbashisms "${file}" 2>&1)"
-      if [[ -n "${cb_output}" ]]; then
-        print_indented "checkbashisms" "${cb_output}"
-      fi
+    cb_output="$(run_checkbashisms "${file}" 2>&1)"
+    if [[ -n "${cb_output}" ]]; then
+      print_indented "checkbashisms" "${cb_output}"
     fi
 
     # 5. shellharden.
-    if (( tools[shellharden] )); then
-      sh_output="$(run_shellharden "${file}" 2>&1)"
-      if [[ -n "${sh_output}" ]]; then
-        print_indented "shellharden" "${sh_output}"
-      fi
+    sh_output="$(run_shellharden "${file}" 2>&1)"
+    if [[ -n "${sh_output}" ]]; then
+      print_indented "shellharden" "${sh_output}"
     fi
 
     # 6. setopt warnings (variable scope).
@@ -190,19 +201,15 @@ function main() {
     fi
 
     # 7. shfmt.
-    if (( tools[shfmt] )); then
-      fmt_output="$(run_shfmt "${file}" 2>&1)"
-      if [[ -n "${fmt_output}" ]]; then
-        print_indented "shfmt" "${fmt_output}"
-      fi
+    fmt_output="$(run_shfmt "${file}" 2>&1)"
+    if [[ -n "${fmt_output}" ]]; then
+      print_indented "shfmt" "${fmt_output}"
     fi
 
     # 8. beautysh.
-    if (( tools[beautysh] )); then
-      bs_output="$(run_beautysh "${file}" 2>&1)"
-      if [[ -n "${bs_output}" ]]; then
-        print_indented "beautysh" "${bs_output}"
-      fi
+    bs_output="$(run_beautysh "${file}" 2>&1)"
+    if [[ -n "${bs_output}" ]]; then
+      print_indented "beautysh" "${bs_output}"
     fi
   done
 
