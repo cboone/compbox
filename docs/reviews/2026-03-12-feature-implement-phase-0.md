@@ -7,7 +7,7 @@ Reviewed through: 7ef4108
 
 ### Summary
 
-This branch implements Phase 00 of the compbox rebuild: a complete test, check, and benchmark foundation. It establishes scrut and zunit test harnesses with smoke tests, a comprehensive 7-tool zsh checking script, a shfmt-based formatting script, and a hyperfine-driven benchmark driver with baseline and smoke modes. CI is fully wired with separate jobs for check-zsh, scrut, zunit, and benchmark smoke, all installing tools from verified GitHub release artifacts instead of building from source.
+This branch implements Phase 00 of the compbox rebuild: a complete test, check, and benchmark foundation. It establishes scrut and zunit test harnesses with smoke tests, a comprehensive 7-tool zsh checking script, a shfmt-based formatting script, and a hyperfine-driven benchmark driver with baseline and smoke modes. CI is fully wired with separate jobs for check-zsh, scrut, zunit, and benchmark smoke, installing most tools from verified GitHub release artifacts instead of building from source (zunit dependencies remain unpinned).
 
 ### Changes by Area
 
@@ -85,7 +85,7 @@ Files: `AGENTS.md`, `CONTRIBUTING.md`, `cspell.json`
 
 ### Notable Changes
 
-- **CI pipeline restructured**: Single test job replaced with four parallel jobs. Tool installation switched from `cargo install` to pre-built binary downloads with hash verification. This significantly reduces CI time and attack surface.
+- **CI pipeline restructured**: Single test job replaced with four parallel jobs. Tool installation switched from `cargo install` to pre-built binary downloads with hash verification (shellharden, hyperfine, shfmt). Zunit dependencies (revolver, color) remain unpinned. This significantly reduces CI time and attack surface.
 - **Rust toolchain dependency removed**: scrut is now installed from a pre-built release tarball.
 - **New development tool requirements**: shellcheck, shfmt, shellharden, checkbashisms, hyperfine, jq are all required for development.
 - **Benchmark artifacts**: CI uploads `bench-smoke-json` artifact on each run.

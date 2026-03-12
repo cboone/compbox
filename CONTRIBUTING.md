@@ -58,7 +58,7 @@ lifecycle testing:
 # scrut (required)
 cargo install --locked scrut
 
-# zunit (optional, installed automatically in CI)
+# zunit (required for `make test`; installed automatically in CI)
 git clone https://github.com/zunit-zsh/zunit.git /tmp/zunit
 cd /tmp/zunit && sudo ./build.zsh
 ```

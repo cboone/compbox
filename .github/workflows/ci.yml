@@ -46,7 +46,14 @@ jobs:
           sudo apt-get install -y zsh shellcheck devscripts
 
       - name: Install shfmt
-        run: sudo snap install shfmt
+        env:
+          VERSION: "3.13.0"
+          SHA256: "70aa99784703a8d6569bbf0b1e43e1a91906a4166bf1a79de42050a6d0de7551"
+        run: |
+          curl -sSfL -o shfmt \
+            "https://github.com/mvdan/sh/releases/download/v${VERSION}/shfmt_v${VERSION}_linux_amd64"
+          echo "${SHA256}  shfmt" | sha256sum --check
+          sudo install -m 755 shfmt /usr/local/bin/shfmt
 
       - name: Install shellharden
         env:

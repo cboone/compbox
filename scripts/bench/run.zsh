@@ -190,7 +190,7 @@ function main() {
     mkdir -p "${BENCHMARKS_DIR}"
     json_out="${BENCHMARKS_DIR}/baseline.json"
   else
-    json_out="$(mktemp -t compbox-bench.XXXXXX).json"
+    json_out="$(mktemp -t compbox-bench-XXXXXX.json)"
     cleanup_json=1
   fi
 
