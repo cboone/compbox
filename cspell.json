@@ -1,6 +1,6 @@
 {
   "version": "0.2",
   "language": "en",
-  "words": ["apre", "beautysh", "bindkey", "callees", "cand", "cboone", "checkbashisms", "compbox", "compadd", "compcap", "complist", "compsys", "compstate", "cooldown", "descs", "dscr", "dtolnay", "elif", "EPOCHREALTIME", "frontmatter", "hpre", "IPREFIX", "ISUFFIX", "keymap", "keymaps", "localoptions", "metacharacters", "mhello", "multibyte", "myword", "pidx", "POSTDISPLAY", "realdir", "reentrancy", "reimplementation", "scrut", "setopt", "shellcheck", "shellharden", "shfmt", "SIGWINCH", "TESTDIR", "unfunction", "vidx", "viins", "wpre", "wsuf", "zcompile", "zinit", "zparseopts", "zplug", "zpty", "zstyle", "zunit"],
-  "ignorePaths": [".git", ".git/"]
+  "words": ["apre", "bashism", "beautysh", "bindkey", "callees", "cand", "cboone", "checkbashisms", "compbox", "compadd", "compcap", "compinit", "complist", "compsys", "compstate", "cooldown", "descs", "devscripts", "dpkg", "dscr", "dtolnay", "elif", "EPOCHREALTIME", "frontmatter", "hpre", "hyperfine", "IPREFIX", "ISUFFIX", "jqlang", "keymap", "keymaps", "localoptions", "metacharacters", "mhello", "multibyte", "myword", "noop", "nounset", "pidx", "POSTDISPLAY", "realdir", "reentrancy", "reimplementation", "scrut", "setopt", "shellcheck", "shellharden", "shfmt", "shopt", "SIGWINCH", "TESTDIR", "unfunction", "unsetopt", "vidx", "viins", "wpre", "wsuf", "zcompile", "zinit", "zmodload", "zparseopts", "zplug", "zpty", "zstyle", "zunit"],
+  "ignorePaths": [".git", ".git/", "benchmarks/"]
 }

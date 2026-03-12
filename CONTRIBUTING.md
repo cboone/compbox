@@ -17,6 +17,17 @@ Please note that this project has a [Code of Conduct](CODE_OF_CONDUCT.md). By pa
 - zsh 5.9+
 - tmux
 
+### Development Tools
+
+Install all tools used by `make check-zsh`, `make format-zsh`, and `make bench`:
+
+- [shellcheck](https://www.shellcheck.net/): `brew install shellcheck`
+- [shfmt](https://github.com/mvdan/sh): `brew install shfmt`
+- [shellharden](https://github.com/anordal/shellharden): `brew install shellharden`
+- [checkbashisms](https://tracker.debian.org/pkg/devscripts): `brew install checkbashisms`
+- [hyperfine](https://github.com/sharkdp/hyperfine): `brew install hyperfine`
+- [jq](https://jqlang.github.io/jq/): `brew install jq`
+
 ### Getting Started
 
 ```bash
@@ -30,23 +41,64 @@ make lint
 # Check formatting
 make format-check
 
-# Run tests
+# Run all checks and tests
+make verify
+
+# Run tests only
 make test
 ```
 
 ### Test Dependencies
 
 Tests use [scrut](https://github.com/facebookincubator/scrut) for CLI
-snapshot testing:
+snapshot testing and [zunit](https://github.com/zunit-zsh/zunit) for zsh
+lifecycle testing:
 
 ```bash
+# scrut (required)
 cargo install --locked scrut
+
+# zunit (required for `make test`; installed automatically in CI)
+git clone https://github.com/zunit-zsh/zunit.git /tmp/zunit
+cd /tmp/zunit && sudo ./build.zsh
 ```
+
+### Benchmark Instrumentation
+
+Internal timing hooks are opt-in. Set `CBX_BENCH=1` before sourcing plugin files
+to enable benchmark helpers such as `cbx_bench_mark`,
+`cbx_bench_record_elapsed`, and `cbx_bench_report`.
+
+Leave `CBX_BENCH` unset for normal development and runtime paths so timing
+state is not created.
+
+### Benchmark Artifacts
+
+- `make bench-baseline` writes `benchmarks/baseline.json` for local comparison.
+- Benchmark JSON files under `benchmarks/` are intentionally gitignored.
+- CI smoke benchmarks upload a `bench-smoke-json` artifact for each run.
+
+### Available Make Targets
+
+| Target                | Description                                  |
+| --------------------- | -------------------------------------------- |
+| `make test`           | Run all tests (scrut + zunit)                |
+| `make test-scrut`     | Run scrut CLI tests                          |
+| `make test-zunit`     | Run zunit lifecycle tests                    |
+| `make check-zsh`      | Check zsh scripts for syntax and lint issues |
+| `make format-zsh`     | Format zsh scripts with shfmt                |
+| `make verify`         | Run checks and tests                         |
+| `make bench`          | Run benchmarks                               |
+| `make bench-baseline` | Capture benchmark baseline                   |
+| `make lint`           | Run all linters                              |
+| `make format`         | Format Markdown, JSON, and YAML files        |
+| `make help`           | Show all available targets                   |
 
 ## Code Style
 
-- Run `make lint` before committing
+- Run `make verify` before committing
 - Run `make format` to format Markdown, JSON, and YAML files
+- Run `make format-zsh` to format zsh scripts
 
 ## Commit Messages
 

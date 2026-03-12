@@ -1,0 +1,79 @@
+#!/usr/bin/env zunit
+
+@setup {
+  load "helpers/bootstrap.zsh"
+}
+
+@teardown {
+  if (( ${+functions[cbx_reset]} )); then
+    cbx_reset
+  fi
+}
+
+@test 'bootstrap defines helper functions' {
+  assert "(( ${+functions[cbx_load_plugin]} ))" same_as "(( 1 ))"
+  assert "(( ${+functions[cbx_reset]} ))" same_as "(( 1 ))"
+}
+
+@test 'bootstrap resolves project root' {
+  assert "${CBX_PROJECT_ROOT}" is_not_empty
+  run test -d "${CBX_PROJECT_ROOT}"
+  assert $state equals 0
+}
+
+@test 'load plugin uses deterministic source order' {
+  cbx_load_plugin
+  assert "${(j:,:)CBX_TEST_LOADED_SOURCES}" same_as "10-record-first,20-record-second,30-record-options"
+}
+
+@test 'load plugin enables strict options while sourcing' {
+  cbx_load_plugin
+  assert "${CBX_TEST_PLUGIN_STRICT_OPTIONS}" same_as "on"
+}
+
+@test 'helpers do not leak strict options to caller' {
+  unsetopt ERR_EXIT NO_UNSET PIPE_FAIL
+
+  cbx_load_plugin
+
+  assert "${options[err_exit]}" same_as "off"
+  assert "${options[nounset]}" same_as "off"
+  assert "${options[pipe_fail]}" same_as "off"
+}
+
+@test 'reset clears plugin functions and globals' {
+  cbx_load_plugin
+
+  function cbx_test_dummy() { echo "dummy"; }
+  assert "$(typeset -f cbx_test_dummy 2>/dev/null)" is_not_empty
+  assert "${CBX_TEST_TMP_GLOBAL}" same_as "set-by-first-fixture"
+
+  cbx_reset
+
+  run typeset -f cbx_test_dummy 2>/dev/null
+  assert "$output" is_empty
+  assert "${CBX_TEST_TMP_GLOBAL-}" is_empty
+  assert "${CBX_TEST_LOADED_SOURCES-}" is_empty
+}
+
+@test 'CBX_BENCH is disabled by default' {
+  cbx_load_plugin
+  cbx_bench_mark "startup"
+
+  assert "(( ${+CBX_BENCH_MARKS} ))" same_as "(( 0 ))"
+}
+
+@test 'CBX_BENCH=1 enables timing hooks' {
+  local CBX_BENCH=1
+  source "${CBX_PROJECT_ROOT}/lib/bench/timing.zsh"
+
+  cbx_bench_mark "startup"
+  assert "(( ${+CBX_BENCH_MARKS[startup]} ))" same_as "(( 1 ))"
+}
+
+@test 'run captures failing command status and output' {
+  run zsh -c 'print -u2 "failure details"; return 23'
+
+  assert $state equals 23
+  assert "$output" same_as "failure details"
+}

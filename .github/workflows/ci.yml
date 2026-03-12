@@ -32,8 +32,52 @@ jobs:
   github-lint:
     uses: cboone/gh-actions/.github/workflows/github-lint.yml@v1
 
-  test:
-    name: Test
+  check-zsh:
+    name: Check zsh
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install apt packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh shellcheck devscripts
+
+      - name: Install shfmt
+        env:
+          VERSION: "3.13.0"
+          SHA256: "70aa99784703a8d6569bbf0b1e43e1a91906a4166bf1a79de42050a6d0de7551"
+        run: |
+          curl -sSfL -o shfmt \
+            "https://github.com/mvdan/sh/releases/download/v${VERSION}/shfmt_v${VERSION}_linux_amd64"
+          echo "${SHA256}  shfmt" | sha256sum --check
+          sudo install -m 755 shfmt /usr/local/bin/shfmt
+
+      - name: Install shellharden
+        env:
+          VERSION: "4.3.1"
+          SHA512: "db95f075fef1a2ec604d18e5c366d396cd4622b64e5a44ef1f4aa2068d6f050d7ac426a4906dc44b612072a319954e96a16dad9030055d3158dd3518e48f111c"
+        run: |
+          curl -sSfL -o shellharden.tar.gz \
+            "https://github.com/anordal/shellharden/releases/download/v${VERSION}/shellharden-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${SHA512}  shellharden.tar.gz" | sha512sum --check
+          tar xzf shellharden.tar.gz
+          sudo mv shellharden /usr/local/bin/
+
+      - name: Run zsh checks
+        run: make check-zsh
+
+  test-scrut:
+    uses: cboone/gh-actions/.github/workflows/scrut.yml@v1
+    with:
+      scrut-shell: zsh
+      scrut-test-dir: "tests/scrut/"
+      scrut-setup-cmd: sudo apt-get update && sudo apt-get install -y zsh
+
+  test-zunit:
+    name: Test (zunit)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -43,11 +87,46 @@ jobs:
       - name: Install zsh
         run: sudo apt-get update && sudo apt-get install -y zsh
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install zunit and dependencies
+        run: |
+          curl -fsSL -o /tmp/revolver https://raw.githubusercontent.com/molovo/revolver/master/revolver
+          sudo install -m 755 /tmp/revolver /usr/local/bin/revolver
+          curl -fsSL -o /tmp/color https://raw.githubusercontent.com/molovo/color/master/color.zsh
+          sudo install -m 755 /tmp/color /usr/local/bin/color
+          git clone --depth 1 https://github.com/zunit-zsh/zunit.git /tmp/zunit
+          cd /tmp/zunit
+          ./build.zsh
+          sudo install -m 755 zunit /usr/local/bin/zunit
 
-      - name: Install scrut
-        run: cargo install --locked scrut
+      - name: Run zunit tests
+        run: make test-zunit
 
-      - name: Run tests
-        run: make test
+  bench-smoke:
+    name: Benchmark (smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install zsh and jq
+        run: sudo apt-get update && sudo apt-get install -y zsh jq
+
+      - name: Install hyperfine
+        env:
+          VERSION: "1.20.0"
+          SHA256: "e0391897ffb490af8a6b64e0e4281ac2c8e10cbcbb875bd22a376f44cdb263ab"
+        run: |
+          curl -sSfL -o hyperfine.deb \
+            "https://github.com/sharkdp/hyperfine/releases/download/v${VERSION}/hyperfine_${VERSION}_amd64.deb"
+          echo "${SHA256}  hyperfine.deb" | sha256sum --check
+          sudo dpkg -i hyperfine.deb
+
+      - name: Run benchmark smoke
+        run: zsh scripts/bench/run.zsh --smoke --json-out "${RUNNER_TEMP}/bench-smoke.json"
+
+      - name: Upload benchmark smoke artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-smoke-json
+          path: ${{ runner.temp }}/bench-smoke.json
