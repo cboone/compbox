@@ -24,8 +24,8 @@ Install all tools used by `make check-zsh`, `make format-zsh`, and `make bench`:
 - [shellcheck](https://www.shellcheck.net/): `brew install shellcheck`
 - [shfmt](https://github.com/mvdan/sh): `brew install shfmt`
 - [beautysh](https://github.com/lovesegfault/beautysh): `brew install beautysh`
-- [shellharden](https://github.com/antsichaut/shellharden): `brew install shellharden`
-- [checkbashisms](https://sourceforge.net/projects/checkbaskisms/): `brew install checkbashisms`
+- [shellharden](https://github.com/anordal/shellharden): `brew install shellharden`
+- [checkbashisms](https://tracker.debian.org/pkg/devscripts): `brew install checkbashisms`
 - [hyperfine](https://github.com/sharkdp/hyperfine): `brew install hyperfine`
 - [jq](https://jqlang.github.io/jq/): `brew install jq`
 

@@ -40,16 +40,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install zsh and tools
+      - name: Install apt packages
         run: |
           sudo apt-get update
           sudo apt-get install -y zsh shellcheck devscripts
-          sudo snap install shfmt
-          cargo install --locked shellharden
-          pip install beautysh
+
+      - name: Install shfmt
+        run: sudo snap install shfmt
+
+      - name: Install shellharden
+        env:
+          VERSION: "4.3.1"
+          SHA512: "db95f075fef1a2ec604d18e5c366d396cd4622b64e5a44ef1f4aa2068d6f050d7ac426a4906dc44b612072a319954e96a16dad9030055d3158dd3518e48f111c"
+        run: |
+          curl -sSfL -o shellharden.tar.gz \
+            "https://github.com/anordal/shellharden/releases/download/v${VERSION}/shellharden-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${SHA512}  shellharden.tar.gz" | sha512sum --check
+          tar xzf shellharden.tar.gz
+          sudo mv shellharden /usr/local/bin/
+
+      - name: Install beautysh
+        run: pip install beautysh
 
       - name: Run zsh checks
         run: make check-zsh
@@ -65,11 +76,19 @@ jobs:
       - name: Install zsh
         run: sudo apt-get update && sudo apt-get install -y zsh
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Install scrut
-        run: cargo install --locked scrut
+        env:
+          VERSION: "0.4.3"
+          SHA256: "6aefb0bff29b450fbd1b04083eefeae4388d6c9302e31d1a24b7aa9edd03bb35"
+        run: |
+          tarball="scrut-v${VERSION}-linux-x86_64.tar.gz"
+          curl -sSfL -o "${tarball}" \
+            "https://github.com/facebookincubator/scrut/releases/download/v${VERSION}/${tarball}"
+          echo "${SHA256}  ${tarball}" | sha256sum --check
+          install_dir="${RUNNER_TEMP}/scrut-bin"
+          mkdir -p "${install_dir}"
+          tar -xz -C "${install_dir}" -f "${tarball}" --strip-components=1
+          echo "${install_dir}" >> "${GITHUB_PATH}"
 
       - name: Run scrut tests
         run: make test-scrut
@@ -103,11 +122,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Install zsh and tools
+      - name: Install zsh and jq
+        run: sudo apt-get update && sudo apt-get install -y zsh jq
+
+      - name: Install hyperfine
+        env:
+          VERSION: "1.20.0"
+          SHA256: "e0391897ffb490af8a6b64e0e4281ac2c8e10cbcbb875bd22a376f44cdb263ab"
         run: |
-          sudo apt-get update
-          sudo apt-get install -y zsh jq
-          wget -qO hyperfine.deb https://github.com/sharkdp/hyperfine/releases/download/v1.20.0/hyperfine_1.20.0_amd64.deb
+          curl -sSfL -o hyperfine.deb \
+            "https://github.com/sharkdp/hyperfine/releases/download/v${VERSION}/hyperfine_${VERSION}_amd64.deb"
+          echo "${SHA256}  hyperfine.deb" | sha256sum --check
           sudo dpkg -i hyperfine.deb
 
       - name: Run benchmark smoke
