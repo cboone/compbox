@@ -17,6 +17,8 @@ setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
 readonly PROJECT_ROOT="${0:A:h:h}"
 
+source "${PROJECT_ROOT}/scripts/lib/find-zsh-files.zsh"
+
 # SC codes excluded as false positives when running shellcheck --shell=bash
 # on zsh scripts:
 #   SC1036  "(" unexpected: zsh glob qualifiers like (N) and (.)
@@ -41,16 +43,7 @@ function print_indented() {
   print "  ${label}:"
   while IFS= read -r line; do
     print "    ${line}"
-  done <<< "${output}"
-}
-
-function find_zsh_files() {
-  local -a files=()
-  local pattern
-  for pattern in "lib/**/*.zsh" "scripts/**/*.zsh" "tests/helpers/**/*.zsh" "tests/fixtures/**/*.zsh" "tests/zunit/helpers/**/*.zsh" "*.plugin.zsh"; do
-    files+=("${PROJECT_ROOT}"/${~pattern}(N))
-  done
-  print -l "${files[@]}"
+  done <<<"${output}"
 }
 
 function require_tools() {
@@ -61,7 +54,7 @@ function require_tools() {
       missing+=("${tool}")
     fi
   done
-  if (( ${#missing[@]} > 0 )); then
+  if ((${#missing[@]} > 0)); then
     print "Error: required tools not found: ${(j:, :)missing}" >&2
     return 1
   fi
@@ -126,14 +119,14 @@ function run_setopt_warnings() {
   fi
   # || true: returns non-zero if source encounters warnings; ERR_EXIT would
   # terminate the script before we can capture and report findings.
-  zsh -c 'emulate -L zsh; setopt warn_create_global warn_nested_var; source "'"${file}"'"' 2>&1 || true
+  zsh -c 'emulate -L zsh; setopt warn_create_global warn_nested_var; source '"${(q)file}" 2>&1 || true
 }
 
 function main() {
   local -a zsh_files=()
   zsh_files=("${(@f)$(find_zsh_files)}")
 
-  if (( ${#zsh_files[@]} == 0 )); then
+  if ((${#zsh_files[@]} == 0)); then
     print "No zsh files found to check."
     return 0
   fi
@@ -203,7 +196,7 @@ function main() {
     fi
   done
 
-  if (( exit_code == 0 )); then
+  if ((exit_code == 0)); then
     print "All zsh checks passed."
   fi
 

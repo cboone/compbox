@@ -90,9 +90,10 @@ function extract_stats() {
 
   median="$(jq -r --arg scenario "${scenario}" '.results[] | select(.command == $scenario) | .median' "${json_file}")"
   # hyperfine exports times array, compute p95 from sorted times.
+  # Use ceil-1 index clamped to the last element for correctness on small arrays.
   p95="$(jq -r --arg scenario "${scenario}" '
   .results[] | select(.command == $scenario) |
-  .times | sort | .[((length * 0.95) | floor)]
+  .times | sort | .[([((length * 0.95) | ceil) - 1, length - 1] | min)]
   ' "${json_file}")"
 
   printf "scenario=%-20s p50=%.4f p95=%.4f iterations=%d\n" "${scenario}" "${median}" "${p95}" "${runs}"

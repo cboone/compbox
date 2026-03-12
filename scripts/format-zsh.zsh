@@ -10,14 +10,7 @@ setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
 readonly PROJECT_ROOT="${0:A:h:h}"
 
-function find_zsh_files() {
-  local -a files=()
-  local pattern
-  for pattern in "lib/**/*.zsh" "scripts/**/*.zsh" "tests/helpers/**/*.zsh" "tests/fixtures/**/*.zsh" "tests/zunit/helpers/**/*.zsh" "*.plugin.zsh"; do
-    files+=("${PROJECT_ROOT}"/${~pattern}(N))
-  done
-  print -l "${files[@]}"
-}
+source "${PROJECT_ROOT}/scripts/lib/find-zsh-files.zsh"
 
 function require_tools() {
   if ! command -v shfmt >/dev/null 2>&1; then
@@ -32,7 +25,7 @@ function main() {
   local -a zsh_files=()
   zsh_files=("${(@f)$(find_zsh_files)}")
 
-  if (( ${#zsh_files[@]} == 0 )); then
+  if ((${#zsh_files[@]} == 0)); then
     print "No zsh files found to format."
     return 0
   fi
