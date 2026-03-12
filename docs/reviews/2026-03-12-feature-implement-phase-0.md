@@ -25,7 +25,7 @@ Files: `tests/scrut/smoke.md`, `tests/zunit/smoke.zunit`
 
 #### Check and format scripts
 
-`check-zsh.zsh` runs 7 tools per file: `zsh -n`, `zcompile`, `shellcheck` (with documented SC exclusions), `checkbashisms`, `shellharden`, `setopt warn_create_global/warn_nested_var`, and `shfmt`. All tools are required; no graceful skip logic. `format-zsh.zsh` formats with `shfmt` (skipping unparseable files) and re-verifies syntax. beautysh was dropped in favor of shfmt as the sole formatter.
+`check-zsh.zsh` runs 7 tools per file: `zsh -n`, `zcompile`, `shellcheck` (with documented SC exclusions), `checkbashisms`, `shellharden`, `setopt warn_create_global/warn_nested_var`, and `shfmt`. All tools are required; no graceful skip logic. `format-zsh.zsh` formats with `shfmt` (skipping unparsable files) and re-verifies syntax. beautysh was dropped in favor of shfmt as the sole formatter.
 
 Files: `scripts/check-zsh.zsh`, `scripts/format-zsh.zsh`
 
