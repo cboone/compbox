@@ -36,6 +36,10 @@ function check_deps() {
     print "jq not found. Install it with: brew install jq" >&2
     return 1
   fi
+  if ! command -v expect >/dev/null 2>&1; then
+    print "expect not found. Install it with: brew install expect" >&2
+    return 1
+  fi
 }
 
 function require_fixtures() {
@@ -167,7 +171,7 @@ function run_benchmarks() {
     print "Running baseline benchmarks (${runs} iterations, ${WARMUP} warmup)..."
   elif [[ "${mode}" == "smoke" ]]; then
     print "Running smoke benchmarks (${runs} iterations, ${WARMUP} warmup)..."
-    print "Fixture set: small (stock completion and no-op plugin startup)."
+    print "Fixture set: small (stock completion, no-op plugin startup, and pass-through Tab)."
   else
     print "Running full benchmarks (${runs} iterations, ${WARMUP} warmup)..."
   fi
