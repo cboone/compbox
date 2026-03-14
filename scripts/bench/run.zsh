@@ -20,6 +20,13 @@ readonly WARMUP=5
 typeset -ga BENCH_SCENARIO_NAMES=()
 typeset -ga BENCH_SCENARIO_COMMANDS=()
 
+# ANSI color codes (matching hyperfine's style).
+readonly C_BOLD=$'\e[1m'
+readonly C_GREEN=$'\e[1;32m'
+readonly C_CYAN=$'\e[1;36m'
+readonly C_YELLOW=$'\e[1;33m'
+readonly C_RESET=$'\e[0m'
+
 function check_deps() {
   if ! command -v hyperfine >/dev/null 2>&1; then
     print "hyperfine not found. Install it with: brew install hyperfine" >&2
@@ -35,6 +42,7 @@ function require_fixtures() {
   local -a required_fixtures=(
     "${FIXTURES_DIR}/noop-plugin.zsh"
     "${FIXTURES_DIR}/noop-plugin-startup.zsh"
+    "${FIXTURES_DIR}/pass-through-tab.zsh"
     "${FIXTURES_DIR}/stock-completion.zsh"
   )
 
@@ -59,6 +67,8 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
     BENCH_SCENARIO_NAMES+=("noop-plugin-startup")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
+    BENCH_SCENARIO_NAMES+=("pass-through-tab")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/pass-through-tab.zsh")
     ;;
   smoke)
     # Small fixture set for CI smoke validation.
@@ -66,6 +76,8 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
     BENCH_SCENARIO_NAMES+=("noop-plugin-startup")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
+    BENCH_SCENARIO_NAMES+=("pass-through-tab")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/pass-through-tab.zsh")
     ;;
   full)
     BENCH_SCENARIO_NAMES+=("stock-zsh")
@@ -74,6 +86,8 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
     BENCH_SCENARIO_NAMES+=("noop-plugin-startup")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
+    BENCH_SCENARIO_NAMES+=("pass-through-tab")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/pass-through-tab.zsh")
     ;;
   *)
     print "Unknown benchmark mode: ${mode}" >&2
@@ -86,17 +100,60 @@ function extract_stats() {
   local json_file="${1}"
   local scenario="${2}"
   local runs="${3}"
-  local median p95
+  local median_s p95_s
 
-  median="$(jq -r --arg scenario "${scenario}" '.results[] | select(.command == $scenario) | .median' "${json_file}")"
+  median_s="$(jq -r --arg scenario "${scenario}" '.results[] | select(.command == $scenario) | .median' "${json_file}")"
   # hyperfine exports times array, compute p95 from sorted times.
   # Use ceil-1 index clamped to the last element for correctness on small arrays.
-  p95="$(jq -r --arg scenario "${scenario}" '
+  p95_s="$(jq -r --arg scenario "${scenario}" '
   .results[] | select(.command == $scenario) |
   .times | sort | .[([((length * 0.95) | ceil) - 1, length - 1] | min)]
   ' "${json_file}")"
 
-  printf "scenario=%-20s p50=%.4f p95=%.4f iterations=%d\n" "${scenario}" "${median}" "${p95}" "${runs}"
+  local median_ms p95_ms
+  median_ms="$(printf '%.2f' "$(echo "${median_s} * 1000" | bc -l)")"
+  p95_ms="$(printf '%.2f' "$(echo "${p95_s} * 1000" | bc -l)")"
+
+  printf "  %-24s p50=${C_CYAN}%7s ms${C_RESET}   p95=${C_CYAN}%7s ms${C_RESET}   (%d runs)\n" "${scenario}" "${median_ms}" "${p95_ms}" "${runs}"
+}
+
+function print_delta() {
+  local json_file="${1}"
+  local baseline="${2}"
+  local target="${3}"
+
+  local base_p50 target_p50 base_p95 target_p95
+  base_p50="$(jq -r --arg s "${baseline}" '.results[] | select(.command == $s) | .median' "${json_file}")"
+  target_p50="$(jq -r --arg s "${target}" '.results[] | select(.command == $s) | .median' "${json_file}")"
+  base_p95="$(jq -r --arg s "${baseline}" '
+    .results[] | select(.command == $s) |
+    .times | sort | .[([((length * 0.95) | ceil) - 1, length - 1] | min)]
+  ' "${json_file}")"
+  target_p95="$(jq -r --arg s "${target}" '
+    .results[] | select(.command == $s) |
+    .times | sort | .[([((length * 0.95) | ceil) - 1, length - 1] | min)]
+  ' "${json_file}")"
+
+  local delta_p50 delta_p95
+  delta_p50="$(printf '%.2f' "$(echo "(${target_p50} - ${base_p50}) * 1000" | bc -l)")"
+  delta_p95="$(printf '%.2f' "$(echo "(${target_p95} - ${base_p95}) * 1000" | bc -l)")"
+
+  # Green if under 1ms, yellow otherwise.
+  local color_p50="${C_GREEN}"
+  local abs_p50="${delta_p50#+}"
+  abs_p50="${abs_p50#-}"
+  if (($(echo "${abs_p50} >= 1" | bc -l))); then
+    color_p50="${C_YELLOW}"
+  fi
+
+  local color_p95="${C_GREEN}"
+  local abs_p95="${delta_p95#+}"
+  abs_p95="${abs_p95#-}"
+  if (($(echo "${abs_p95} >= 1" | bc -l))); then
+    color_p95="${C_YELLOW}"
+  fi
+
+  printf "  %-24s p50=${color_p50}%+7s ms${C_RESET}   p95=${color_p95}%+7s ms${C_RESET}\n" "delta" "${delta_p50}" "${delta_p95}"
 }
 
 function run_benchmarks() {
@@ -134,12 +191,24 @@ function run_benchmarks() {
   hyperfine "${hyperfine_args[@]}"
 
   print ""
-  print -- "--- Results (seconds) ---"
+  print "${C_BOLD}Results${C_RESET}"
 
   local scenario
   for scenario in "${BENCH_SCENARIO_NAMES[@]}"; do
     extract_stats "${json_out}" "${scenario}" "${runs}"
   done
+
+  # Show lifecycle overhead delta when both scenarios are present.
+  local has_stock=0 has_passthrough=0
+  for scenario in "${BENCH_SCENARIO_NAMES[@]}"; do
+    [[ "${scenario}" == "stock-completion" ]] && has_stock=1
+    [[ "${scenario}" == "pass-through-tab" ]] && has_passthrough=1
+  done
+  if ((has_stock && has_passthrough)); then
+    print ""
+    print "${C_BOLD}Lifecycle overhead${C_RESET} (pass-through-tab vs stock-completion)"
+    print_delta "${json_out}" "stock-completion" "pass-through-tab"
+  fi
 }
 
 function main() {
