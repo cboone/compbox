@@ -101,6 +101,31 @@
   assert "${_CBX_ENABLED}" same_as "1"
 }
 
+@test 'compbox.plugin.zsh bootstraps clean shell without preloaded phase files' {
+  local output
+  output="$(
+    zsh -f -c '
+      source "$1/compbox.plugin.zsh"
+      print -r -- "enabled=${_CBX_ENABLED:-0}"
+      print -r -- "sourced=${_CBX_PLUGIN_SOURCED:-0}"
+      print -r -- "has-enable=${+functions[cbx-enable]}"
+      print -r -- "has-disable=${+functions[cbx-disable]}"
+      print -r -- "has-complete=${+functions[cbx-complete]}"
+      bindkey -M emacs "^I"
+    ' _ "${CBX_PROJECT_ROOT}"
+  )"
+
+  local -a lines
+  lines=("${(@f)output}")
+
+  assert "${lines[1]}" same_as "enabled=1"
+  assert "${lines[2]}" same_as "sourced=1"
+  assert "${lines[3]}" same_as "has-enable=1"
+  assert "${lines[4]}" same_as "has-disable=1"
+  assert "${lines[5]}" same_as "has-complete=1"
+  assert "${lines[6]}" same_as '"^I" cbx-complete'
+}
+
 @test 'enable saves original widget names' {
   cbx-enable
 
