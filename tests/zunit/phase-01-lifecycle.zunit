@@ -64,6 +64,28 @@
   assert "${_CBX_ENABLED:-0}" same_as "0"
 }
 
+@test 'cbx-complete dispatches to original widget by keymap' {
+  local vi_called
+  vi_called="$(
+    function zle() { print -r -- "${1}"; }
+    _CBX_ORIG_TAB_EMACS="expand-or-complete"
+    _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+    KEYMAP="viins"
+    cbx-complete
+  )"
+  assert "${vi_called}" same_as "vi-expand-or-complete"
+
+  local emacs_called
+  emacs_called="$(
+    function zle() { print -r -- "${1}"; }
+    _CBX_ORIG_TAB_EMACS="expand-or-complete"
+    _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+    KEYMAP="main"
+    cbx-complete
+  )"
+  assert "${emacs_called}" same_as "expand-or-complete"
+}
+
 @test 'sourcing compbox.plugin.zsh auto-enables once without duplicate installs' {
   source "${CBX_PROJECT_ROOT}/compbox.plugin.zsh"
 

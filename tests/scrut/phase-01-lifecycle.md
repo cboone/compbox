@@ -101,6 +101,32 @@ orig emacs: expand-or-complete
 orig viins: expand-or-complete
 ```
 
+## Pass-through dispatches to viins widget in viins keymap
+
+```scrut
+$ source "${TESTDIR}/../helpers/setup.zsh" &&
+>   cbx_test_setup &&
+>   function zle() { print "called: $1"; } &&
+>   _CBX_ORIG_TAB_EMACS="expand-or-complete" &&
+>   _CBX_ORIG_TAB_VIINS="vi-expand-or-complete" &&
+>   KEYMAP="viins" &&
+>   cbx-complete
+called: vi-expand-or-complete
+```
+
+## Pass-through dispatches to emacs widget outside viins keymap
+
+```scrut
+$ source "${TESTDIR}/../helpers/setup.zsh" &&
+>   cbx_test_setup &&
+>   function zle() { print "called: $1"; } &&
+>   _CBX_ORIG_TAB_EMACS="expand-or-complete" &&
+>   _CBX_ORIG_TAB_VIINS="vi-expand-or-complete" &&
+>   KEYMAP="main" &&
+>   cbx-complete
+called: expand-or-complete
+```
+
 ## Sourcing compbox.plugin.zsh auto-enables once
 
 ```scrut
