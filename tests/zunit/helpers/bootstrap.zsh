@@ -18,6 +18,9 @@ if [[ -z "${CBX_ZUNIT_ROOT:-}" ]]; then
   # Add files here as they are created in later phases.
   typeset -ga CBX_PLUGIN_SOURCES=(
     "lib/bench/timing.zsh"
+    "lib/cbx-complete.zsh"
+    "lib/cbx-enable.zsh"
+    "lib/cbx-disable.zsh"
     "tests/fixtures/plugins/10-record-first.zsh"
     "tests/fixtures/plugins/20-record-second.zsh"
     "tests/fixtures/plugins/30-record-options.zsh"
@@ -29,6 +32,11 @@ if [[ -z "${CBX_ZUNIT_ROOT:-}" ]]; then
     CBX_TEST_PLUGIN_STRICT_OPTIONS
     CBX_BENCH_MARKS
     CBX_BENCH_TIMINGS
+    _CBX_ENABLED
+    _CBX_ORIG_TAB_EMACS
+    _CBX_ORIG_TAB_VIINS
+    _CBX_PLUGIN_SOURCED
+    _CBX_PLUGIN_ROOT
   )
 fi
 
@@ -50,9 +58,14 @@ function cbx_reset() {
   emulate -L zsh
   setopt NO_UNSET PIPE_FAIL
 
-  # Remove functions created during tests (pattern: cbx_* and -cbx-*).
+  # Disable lifecycle if active (restores bindings and removes widget).
+  if ((${_CBX_ENABLED:-0})) && ((${+functions[cbx-disable]})); then
+    cbx-disable
+  fi
+
+  # Remove functions created during tests (pattern: cbx_*, cbx-*, and -cbx-*).
   local fn
-  for fn in ${(k)functions[(I)(cbx_*|-cbx-*)]}; do
+  for fn in ${(k)functions[(I)(cbx_*|cbx-*|-cbx-*)]}; do
     unfunction "${fn}" 2>/dev/null
   done
 

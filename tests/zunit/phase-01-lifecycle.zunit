@@ -1,0 +1,151 @@
+#!/usr/bin/env zunit
+
+@setup {
+  load "helpers/bootstrap.zsh"
+  cbx_load_plugin
+}
+
+@teardown {
+  if (( ${+functions[cbx_reset]} )); then
+    cbx_reset
+  fi
+}
+
+@test 'enabling installs widget and key bindings in both keymaps' {
+  cbx-enable
+
+  assert "${_CBX_ENABLED}" same_as "1"
+
+  local emacs_binding
+  emacs_binding="$(bindkey -M emacs '^I')"
+  assert "${emacs_binding}" same_as '"^I" cbx-complete'
+
+  local viins_binding
+  viins_binding="$(bindkey -M viins '^I')"
+  assert "${viins_binding}" same_as '"^I" cbx-complete'
+}
+
+@test 'disabling restores prior bindings exactly' {
+  local orig_emacs
+  orig_emacs="$(bindkey -M emacs '^I')"
+  local orig_viins
+  orig_viins="$(bindkey -M viins '^I')"
+
+  cbx-enable
+  cbx-disable
+
+  local restored_emacs
+  restored_emacs="$(bindkey -M emacs '^I')"
+  assert "${restored_emacs}" same_as "${orig_emacs}"
+
+  local restored_viins
+  restored_viins="$(bindkey -M viins '^I')"
+  assert "${restored_viins}" same_as "${orig_viins}"
+}
+
+@test 'repeated enable calls do not duplicate hooks' {
+  cbx-enable
+  cbx-enable
+  cbx-enable
+
+  assert "${_CBX_ENABLED}" same_as "1"
+
+  local emacs_binding
+  emacs_binding="$(bindkey -M emacs '^I')"
+  assert "${emacs_binding}" same_as '"^I" cbx-complete'
+}
+
+@test 'repeated disable calls are safe no-ops' {
+  cbx-enable
+  cbx-disable
+  cbx-disable
+  cbx-disable
+
+  assert "${_CBX_ENABLED:-0}" same_as "0"
+}
+
+@test 'cbx-complete dispatches to original widget by keymap' {
+  local vi_called
+  vi_called="$(
+    function zle() { print -r -- "${1}"; }
+    _CBX_ORIG_TAB_EMACS="expand-or-complete"
+    _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+    KEYMAP="viins"
+    cbx-complete
+  )"
+  assert "${vi_called}" same_as "vi-expand-or-complete"
+
+  local emacs_called
+  emacs_called="$(
+    function zle() { print -r -- "${1}"; }
+    _CBX_ORIG_TAB_EMACS="expand-or-complete"
+    _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+    KEYMAP="main"
+    cbx-complete
+  )"
+  assert "${emacs_called}" same_as "expand-or-complete"
+}
+
+@test 'sourcing compbox.plugin.zsh auto-enables once without duplicate installs' {
+  source "${CBX_PROJECT_ROOT}/compbox.plugin.zsh"
+
+  assert "${_CBX_ENABLED}" same_as "1"
+  assert "${_CBX_PLUGIN_SOURCED}" same_as "1"
+
+  local emacs_binding
+  emacs_binding="$(bindkey -M emacs '^I')"
+  assert "${emacs_binding}" same_as '"^I" cbx-complete'
+
+  # Source again: should be guarded.
+  source "${CBX_PROJECT_ROOT}/compbox.plugin.zsh"
+  assert "${_CBX_ENABLED}" same_as "1"
+}
+
+@test 'compbox.plugin.zsh bootstraps clean shell without preloaded phase files' {
+  local output
+  output="$(
+    zsh -f -c '
+      source "$1/compbox.plugin.zsh"
+      print -r -- "enabled=${_CBX_ENABLED:-0}"
+      print -r -- "sourced=${_CBX_PLUGIN_SOURCED:-0}"
+      print -r -- "has-enable=${+functions[cbx-enable]}"
+      print -r -- "has-disable=${+functions[cbx-disable]}"
+      print -r -- "has-complete=${+functions[cbx-complete]}"
+      bindkey -M emacs "^I"
+    ' _ "${CBX_PROJECT_ROOT}"
+  )"
+
+  local -a lines
+  lines=("${(@f)output}")
+
+  assert "${lines[1]}" same_as "enabled=1"
+  assert "${lines[2]}" same_as "sourced=1"
+  assert "${lines[3]}" same_as "has-enable=1"
+  assert "${lines[4]}" same_as "has-disable=1"
+  assert "${lines[5]}" same_as "has-complete=1"
+  assert "${lines[6]}" same_as '"^I" cbx-complete'
+}
+
+@test 'enable saves original widget names' {
+  cbx-enable
+
+  assert "${_CBX_ORIG_TAB_EMACS}" same_as "expand-or-complete"
+  assert "${_CBX_ORIG_TAB_VIINS}" same_as "expand-or-complete"
+}
+
+@test 'disable cleans up lifecycle globals' {
+  cbx-enable
+  cbx-disable
+
+  assert "${_CBX_ENABLED:-unset}" same_as "unset"
+  assert "${_CBX_ORIG_TAB_EMACS:-unset}" same_as "unset"
+  assert "${_CBX_ORIG_TAB_VIINS:-unset}" same_as "unset"
+}
+
+@test 'widget is registered after enable and removed after disable' {
+  cbx-enable
+  assert "(( ${+widgets[cbx-complete]} ))" same_as "(( 1 ))"
+
+  cbx-disable
+  assert "(( ${+widgets[cbx-complete]} ))" same_as "(( 0 ))"
+}

@@ -66,7 +66,24 @@ source ~/.zsh/compbox/compbox.plugin.zsh
 
 ## Usage
 
-TODO
+Compbox activates automatically when sourced. It binds `Tab` to a
+pass-through widget that delegates to the original completion widget, so
+stock completion behavior is preserved exactly.
+
+To disable compbox and restore the original `Tab` binding:
+
+```zsh
+cbx-disable
+```
+
+To re-enable:
+
+```zsh
+cbx-enable
+```
+
+Both commands are idempotent: calling `cbx-enable` when already enabled or
+`cbx-disable` when already disabled is a safe no-op.
 
 ## License
 
