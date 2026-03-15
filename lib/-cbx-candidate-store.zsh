@@ -26,6 +26,8 @@ function -cbx-candidate-pack() {
 
   # Packed format: tab-separated fields in fixed order.
   # id<TAB>word<TAB>display<TAB>group<TAB>prefix<TAB>suffix<TAB>iprefix<TAB>isuffix
+  # NOTE: Production packing is inlined in -cbx-capture-from-compadd to avoid
+  # subshell forks. This function is used in tests for round-trip verification.
   printf '%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
     "${id}" \
     "${word}" \
