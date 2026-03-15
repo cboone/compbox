@@ -52,12 +52,12 @@ function -cbx-candidate-unpack() {
   done
   fields+=("${rest}")
 
-  print "id=${fields[1]}"
-  print "word=${fields[2]}"
-  print "display=${fields[3]}"
-  print "group=${fields[4]}"
-  print "prefix=${fields[5]}"
-  print "suffix=${fields[6]}"
-  print "iprefix=${fields[7]}"
-  print "isuffix=${fields[8]}"
+  print -r -- "id=${fields[1]}"
+  print -r -- "word=${fields[2]}"
+  print -r -- "display=${fields[3]}"
+  print -r -- "group=${fields[4]}"
+  print -r -- "prefix=${fields[5]}"
+  print -r -- "suffix=${fields[6]}"
+  print -r -- "iprefix=${fields[7]}"
+  print -r -- "isuffix=${fields[8]}"
 }

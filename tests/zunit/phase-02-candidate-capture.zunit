@@ -74,6 +74,34 @@
   assert "${lines[8]}" same_as "isuffix=isuf"
 }
 
+@test 'unpack preserves backslash literals in fields' {
+  -cbx-candidate-reset
+
+  local backslash
+  backslash="$(printf '\\')"
+  local word="a${backslash}nb"
+  local display="Label${backslash}tX"
+
+  local packed
+  packed="$(-cbx-candidate-pack 1 "${word}" "${display}" mygroup pre suf ipre isuf)"
+
+  local unpacked_bytes
+  unpacked_bytes="$(-cbx-candidate-unpack "${packed}" | od -An -tx1)"
+
+  local has_backslash_n=0
+  if [[ "${unpacked_bytes}" == *"5c"*"6e"* ]]; then
+    has_backslash_n=1
+  fi
+
+  local has_backslash_t=0
+  if [[ "${unpacked_bytes}" == *"5c"*"74"* ]]; then
+    has_backslash_t=1
+  fi
+
+  assert "${has_backslash_n}" same_as "1"
+  assert "${has_backslash_t}" same_as "1"
+}
+
 @test 'compadd -a expands array variable into candidates' {
   -cbx-candidate-reset
   local -a myfiles=(alpha bravo charlie)
