@@ -142,17 +142,13 @@ function -cbx-capture-from-compadd() {
   typeset -ga _CBX_CANDIDATES
   typeset -gi _CBX_CAND_NEXT_ID
   local idx=0
-  local w disp packed
+  local w disp
+  local tab=$'\t'
   for w in "${words[@]}"; do
     ((idx++))
     ((_CBX_CAND_NEXT_ID++))
     disp="${displays[${idx}]:-${w}}"
-    packed="$(-cbx-candidate-pack \
-      "${_CBX_CAND_NEXT_ID}" \
-      "${w}" "${disp}" "${group}" \
-      "${cur_prefix}" "${cur_suffix}" \
-      "${cur_iprefix}" "${cur_isuffix}")"
-    _CBX_CANDIDATES+=("${packed}")
+    _CBX_CANDIDATES+=("${_CBX_CAND_NEXT_ID}${tab}${w}${tab}${disp}${tab}${group}${tab}${cur_prefix}${tab}${cur_suffix}${tab}${cur_iprefix}${tab}${cur_isuffix}")
   done
 
   cbx_bench_mark "capture-packed"
