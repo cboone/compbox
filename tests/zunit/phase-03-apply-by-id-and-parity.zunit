@@ -1,0 +1,203 @@
+#!/usr/bin/env zunit
+
+@setup {
+  load "helpers/bootstrap.zsh"
+  cbx_load_plugin
+}
+
+@teardown {
+  if (( ${+functions[cbx_reset]} )); then
+    cbx_reset
+  fi
+}
+
+@test 'apply resolve returns selected word for given id' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo charlie
+
+  -cbx-apply-resolve 2
+
+  assert "${REPLY}" same_as "bravo"
+}
+
+@test 'apply resolve sets completion state from candidate record' {
+  -cbx-candidate-reset
+  PREFIX="pre" SUFFIX="suf" IPREFIX="ipre" ISUFFIX="isuf"
+  -cbx-capture-from-compadd -- alpha
+
+  -cbx-apply-resolve 1
+
+  assert "${_CBX_RESOLVE_PREFIX}" same_as "pre"
+  assert "${_CBX_RESOLVE_SUFFIX}" same_as "suf"
+  assert "${_CBX_RESOLVE_IPREFIX}" same_as "ipre"
+  assert "${_CBX_RESOLVE_ISUFFIX}" same_as "isuf"
+}
+
+@test 'apply resolve extracts replay options preserving group and suffix' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -J mygroup -S '/' -- alpha bravo
+
+  -cbx-apply-resolve 1
+
+  assert "${reply[1]}" same_as "-J"
+  assert "${reply[2]}" same_as "mygroup"
+  assert "${reply[3]}" same_as "-S"
+  assert "${reply[4]}" same_as "/"
+}
+
+@test 'apply resolve drops -d display array from replay args' {
+  -cbx-candidate-reset
+  local -a descs=("Alpha Label" "Bravo Label")
+  -cbx-capture-from-compadd -d descs -J grp -- alpha bravo
+
+  -cbx-apply-resolve 1
+
+  # reply should contain only -J grp, not -d descs.
+  assert "${#reply[@]}" same_as "2"
+  assert "${reply[1]}" same_as "-J"
+  assert "${reply[2]}" same_as "grp"
+}
+
+@test 'apply resolve drops -a flag from replay args' {
+  -cbx-candidate-reset
+  local -a files=(f1 f2 f3)
+  -cbx-capture-from-compadd -a -J grp files
+
+  -cbx-apply-resolve 1
+
+  # reply should contain only -J grp, not -a.
+  assert "${#reply[@]}" same_as "2"
+  assert "${reply[1]}" same_as "-J"
+  assert "${reply[2]}" same_as "grp"
+  assert "${REPLY}" same_as "f1"
+}
+
+@test 'selected id replay uses correct originating compadd arg vector' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -J first-group -- samename
+  -cbx-capture-from-compadd -J second-group -- samename
+
+  # Id 1 should resolve to first-group.
+  -cbx-apply-resolve 1
+  assert "${reply[2]}" same_as "first-group"
+
+  # Id 2 should resolve to second-group.
+  -cbx-apply-resolve 2
+  assert "${reply[2]}" same_as "second-group"
+}
+
+@test 'call_idx links each candidate to its originating raw-args entry' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo
+  -cbx-capture-from-compadd -- charlie
+
+  # First two candidates should have call_idx=1, third should have call_idx=2.
+  local unpacked
+  unpacked="$(-cbx-candidate-unpack "${_CBX_CANDIDATES[1]}")"
+  assert "$(echo "${unpacked}" | grep '^call_idx=')" same_as "call_idx=1"
+
+  unpacked="$(-cbx-candidate-unpack "${_CBX_CANDIDATES[2]}")"
+  assert "$(echo "${unpacked}" | grep '^call_idx=')" same_as "call_idx=1"
+
+  unpacked="$(-cbx-candidate-unpack "${_CBX_CANDIDATES[3]}")"
+  assert "$(echo "${unpacked}" | grep '^call_idx=')" same_as "call_idx=2"
+}
+
+@test 'pack and unpack round-trip preserves call_idx' {
+  local packed
+  packed="$(-cbx-candidate-pack 5 myword "My Label" grp pre suf ipre isuf 3)"
+
+  local unpacked
+  unpacked="$(-cbx-candidate-unpack "${packed}")"
+
+  local -a lines
+  lines=("${(@f)unpacked}")
+
+  assert "${lines[1]}" same_as "id=5"
+  assert "${lines[9]}" same_as "call_idx=3"
+}
+
+@test 'resolve fails for nonexistent id' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha
+
+  -cbx-apply-resolve 999 && local resolve_rc=0 || local resolve_rc=$?
+  assert "${resolve_rc}" same_as "1"
+}
+
+@test 'no-match path skips custom popup' {
+  -cbx-candidate-reset
+
+  -cbx-complete-should-popup && local popup_rc=0 || local popup_rc=$?
+  assert "${popup_rc}" same_as "1"
+}
+
+@test 'single-match path skips custom popup' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- only-one
+
+  -cbx-complete-should-popup && local popup_rc=0 || local popup_rc=$?
+  assert "${popup_rc}" same_as "1"
+}
+
+@test 'multiple-match path activates custom popup' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo charlie
+
+  -cbx-complete-should-popup && local popup_rc=0 || local popup_rc=$?
+  assert "${popup_rc}" same_as "0"
+}
+
+@test 'apply widget is registered after enable' {
+  cbx-enable
+
+  assert "(( ${+widgets[_cbx-apply]} ))" same_as "(( 1 ))"
+}
+
+@test 'apply widget is removed after disable' {
+  cbx-enable
+  cbx-disable
+
+  assert "(( ${+widgets[_cbx-apply]} ))" same_as "(( 0 ))"
+}
+
+@test 'compbox.plugin.zsh bootstraps with phase 03 functions available' {
+  local output
+  output="$(
+    zsh -f -c '
+      source "$1/compbox.plugin.zsh"
+      print -r -- "has-apply=${+functions[-cbx-apply]}"
+      print -r -- "has-apply-resolve=${+functions[-cbx-apply-resolve]}"
+      print -r -- "has-should-popup=${+functions[-cbx-complete-should-popup]}"
+    ' _ "${CBX_PROJECT_ROOT}"
+  )"
+
+  local -a lines
+  lines=("${(@f)output}")
+
+  assert "${lines[1]}" same_as "has-apply=1"
+  assert "${lines[2]}" same_as "has-apply-resolve=1"
+  assert "${lines[3]}" same_as "has-should-popup=1"
+}
+
+@test 'replay preserves combined option flags' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -Jmygroup -S/ -- alpha bravo
+
+  -cbx-apply-resolve 1
+
+  assert "${reply[1]}" same_as "-Jmygroup"
+  assert "${reply[2]}" same_as "-S/"
+  assert "${REPLY}" same_as "alpha"
+}
+
+@test 'resolve with empty raw args fails gracefully' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha
+
+  # Corrupt the raw args to simulate missing entry.
+  _CBX_CAND_RAW_ARGS=()
+
+  -cbx-apply-resolve 1 && local resolve_rc=0 || local resolve_rc=$?
+  assert "${resolve_rc}" same_as "1"
+}

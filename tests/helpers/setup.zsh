@@ -16,6 +16,8 @@ readonly -a CBX_PLUGIN_SOURCES=(
   "lib/bench/timing.zsh"
   "lib/-cbx-candidate-store.zsh"
   "lib/-cbx-compadd.zsh"
+  "lib/-cbx-apply.zsh"
+  "lib/-cbx-complete.zsh"
   "lib/cbx-complete.zsh"
   "lib/cbx-enable.zsh"
   "lib/cbx-disable.zsh"
@@ -40,6 +42,12 @@ readonly -a CBX_TEST_GLOBALS_TO_RESET=(
   _CBX_CANDIDATES
   _CBX_CAND_RAW_ARGS
   _CBX_IN_COMPLETE
+  _CBX_POPUP_ACTIVE
+  _CBX_APPLY_ID
+  _CBX_RESOLVE_PREFIX
+  _CBX_RESOLVE_SUFFIX
+  _CBX_RESOLVE_IPREFIX
+  _CBX_RESOLVE_ISUFFIX
 )
 
 function cbx_test_setup() {

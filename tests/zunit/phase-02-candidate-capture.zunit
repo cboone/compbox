@@ -56,7 +56,7 @@
   -cbx-candidate-reset
 
   local packed
-  packed="$(-cbx-candidate-pack 1 myword "My Display" mygroup pre suf ipre isuf)"
+  packed="$(-cbx-candidate-pack 1 myword "My Display" mygroup pre suf ipre isuf 1)"
 
   local unpacked
   unpacked="$(-cbx-candidate-unpack "${packed}")"
@@ -72,6 +72,7 @@
   assert "${lines[6]}" same_as "suffix=suf"
   assert "${lines[7]}" same_as "iprefix=ipre"
   assert "${lines[8]}" same_as "isuffix=isuf"
+  assert "${lines[9]}" same_as "call_idx=1"
 }
 
 @test 'unpack preserves backslash literals in fields' {
@@ -83,7 +84,7 @@
   local display="Label${backslash}tX"
 
   local packed
-  packed="$(-cbx-candidate-pack 1 "${word}" "${display}" mygroup pre suf ipre isuf)"
+  packed="$(-cbx-candidate-pack 1 "${word}" "${display}" mygroup pre suf ipre isuf 1)"
 
   local unpacked_bytes
   unpacked_bytes="$(-cbx-candidate-unpack "${packed}" | od -An -tx1)"

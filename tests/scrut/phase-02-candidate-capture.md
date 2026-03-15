@@ -21,6 +21,7 @@ prefix=
 suffix=
 iprefix=
 isuffix=
+call_idx=1
 ---
 id=2
 word=bravo
@@ -30,6 +31,7 @@ prefix=
 suffix=
 iprefix=
 isuffix=
+call_idx=1
 ---
 id=3
 word=charlie
@@ -39,6 +41,7 @@ prefix=
 suffix=
 iprefix=
 isuffix=
+call_idx=1
 ---
 ```
 
@@ -61,6 +64,7 @@ prefix=
 suffix=
 iprefix=
 isuffix=
+call_idx=1
 ---
 id=2
 word=echo
@@ -70,6 +74,7 @@ prefix=
 suffix=
 iprefix=
 isuffix=
+call_idx=1
 ---
 ```
 

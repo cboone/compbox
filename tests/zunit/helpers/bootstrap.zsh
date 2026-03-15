@@ -20,6 +20,8 @@ if [[ -z "${CBX_ZUNIT_ROOT:-}" ]]; then
     "lib/bench/timing.zsh"
     "lib/-cbx-candidate-store.zsh"
     "lib/-cbx-compadd.zsh"
+    "lib/-cbx-apply.zsh"
+    "lib/-cbx-complete.zsh"
     "lib/cbx-complete.zsh"
     "lib/cbx-enable.zsh"
     "lib/cbx-disable.zsh"
@@ -44,6 +46,12 @@ if [[ -z "${CBX_ZUNIT_ROOT:-}" ]]; then
     _CBX_CANDIDATES
     _CBX_CAND_RAW_ARGS
     _CBX_IN_COMPLETE
+    _CBX_POPUP_ACTIVE
+    _CBX_APPLY_ID
+    _CBX_RESOLVE_PREFIX
+    _CBX_RESOLVE_SUFFIX
+    _CBX_RESOLVE_IPREFIX
+    _CBX_RESOLVE_ISUFFIX
   )
 fi
 
