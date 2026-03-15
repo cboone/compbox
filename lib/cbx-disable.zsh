@@ -23,7 +23,16 @@ function cbx-disable() {
     unfunction compadd
   fi
 
+  # Restore any pre-existing compadd function.
+  if ((${_CBX_COMPADD_HAD_FUNCTION:-0})) && ((${+functions[-cbx-orig-compadd]})); then
+    functions[compadd]="${functions[-cbx-orig-compadd]}"
+  fi
+  if ((${+functions[-cbx-orig-compadd]})); then
+    unfunction -- -cbx-orig-compadd
+  fi
+
   # Clean up state.
   unset _CBX_ORIG_TAB_EMACS _CBX_ORIG_TAB_VIINS _CBX_ENABLED
+  unset _CBX_COMPADD_HAD_FUNCTION
   unset _CBX_CAND_NEXT_ID _CBX_CANDIDATES _CBX_CAND_RAW_ARGS _CBX_IN_COMPLETE 2>/dev/null
 }

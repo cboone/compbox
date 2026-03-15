@@ -112,6 +112,24 @@
   assert "${_CBX_IN_COMPLETE:-unset}" same_as "unset"
 }
 
+@test 'disable restores pre-existing compadd wrapper function' {
+  function compadd() {
+    print -r -- "external-compadd"
+    builtin compadd "${@}"
+  }
+
+  cbx-enable
+  cbx-disable
+
+  assert "(( ${+functions[compadd]} ))" same_as "(( 1 ))"
+
+  local output
+  output="$(compadd -- alpha 2>/dev/null || true)"
+  assert "${output}" same_as "external-compadd"
+
+  unfunction compadd
+}
+
 @test 'candidate-reset clears all capture state' {
   -cbx-candidate-reset
   -cbx-capture-from-compadd -- alpha bravo charlie

@@ -29,6 +29,17 @@ function cbx-enable() {
   bindkey -M emacs '^I' cbx-complete
   bindkey -M viins '^I' cbx-complete
 
+  # Preserve any existing compadd function so disable can restore it.
+  if ((${+functions[compadd]})); then
+    typeset -gi _CBX_COMPADD_HAD_FUNCTION=1
+    functions[-cbx-orig-compadd]="${functions[compadd]}"
+  else
+    typeset -gi _CBX_COMPADD_HAD_FUNCTION=0
+    if ((${+functions[-cbx-orig-compadd]})); then
+      unfunction -- -cbx-orig-compadd
+    fi
+  fi
+
   # Install compadd wrapper for candidate capture.
   function compadd() { -cbx-compadd "${@}"; }
 
