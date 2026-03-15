@@ -31,10 +31,11 @@ source "${PROJECT_ROOT}/scripts/lib/find-zsh-files.zsh"
 #   SC2154  Variable referenced but not assigned: framework variables
 #   SC2168  local outside function: zsh allows local in broader contexts
 #   SC2206  Quote to prevent splitting: zsh does not split unquoted expansions
+#   SC2215  Flag used as command name: zsh internal functions with - prefix
 #   SC2296  Parameter expansion in ${...}: zsh expansion flags
 #   SC2299  Nested ${...}: zsh nested parameter expansions
 #   SC3003-SC3057  Bashism warnings: zsh features flagged as non-POSIX
-readonly SHELLCHECK_EXCLUDE="SC1036,SC1072,SC1073,SC1090,SC1091,SC2034,SC2039,SC2154,SC2168,SC2206,SC2296,SC2299,SC3003,SC3010,SC3030,SC3037,SC3043,SC3044,SC3046,SC3054,SC3057"
+readonly SHELLCHECK_EXCLUDE="SC1036,SC1072,SC1073,SC1090,SC1091,SC2034,SC2039,SC2154,SC2168,SC2206,SC2215,SC2296,SC2299,SC3003,SC3010,SC3030,SC3037,SC3043,SC3044,SC3046,SC3054,SC3057"
 
 # Print multi-line output with indentation.
 function print_indented() {

@@ -34,10 +34,34 @@ print "compbox manual test shell"
 print "  enabled:       \${_CBX_ENABLED}"
 print "  emacs ^I:      \$(bindkey -M emacs '^I')"
 print "  orig widget:   \${_CBX_ORIG_TAB_EMACS}"
+print "  compadd shim:  \${+functions[compadd]}"
 print ""
 print "Try: ls ~/D<Tab>  git ch<Tab>  cd <Tab>"
 print "     cbx-disable  cbx-enable"
+print "     cbx-dump     (show captured candidates after <Tab>)"
 print ""
+
+# Debug helper: dump captured candidates after a <Tab> completion.
+function cbx-dump() {
+  emulate -L zsh
+  setopt NO_UNSET PIPE_FAIL
+
+  print "candidates: \${#_CBX_CANDIDATES[@]}"
+  print "next id:    \${_CBX_CAND_NEXT_ID:-0}"
+  print "raw args:   \${#_CBX_CAND_RAW_ARGS[@]}"
+  print ""
+
+  if ((\${#_CBX_CANDIDATES[@]} == 0)); then
+    print "(no candidates captured, try pressing <Tab> first)"
+    return 0
+  fi
+
+  local packed
+  for packed in "\${_CBX_CANDIDATES[@]}"; do
+    -cbx-candidate-unpack "\${packed}"
+    echo "---"
+  done
+}
 
 PROMPT="compbox %~ %# "
 

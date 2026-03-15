@@ -12,6 +12,8 @@ typeset -g _CBX_PLUGIN_ROOT="${0:A:h}"
 
 # Eager library loading.
 source "${_CBX_PLUGIN_ROOT}/lib/bench/timing.zsh"
+source "${_CBX_PLUGIN_ROOT}/lib/-cbx-candidate-store.zsh"
+source "${_CBX_PLUGIN_ROOT}/lib/-cbx-compadd.zsh"
 source "${_CBX_PLUGIN_ROOT}/lib/cbx-complete.zsh"
 source "${_CBX_PLUGIN_ROOT}/lib/cbx-enable.zsh"
 source "${_CBX_PLUGIN_ROOT}/lib/cbx-disable.zsh"

@@ -10,6 +10,8 @@ compinit -C
 
 readonly _PROJECT_ROOT="${0:A:h:h:h:h}"
 
+source "${_PROJECT_ROOT}/lib/-cbx-candidate-store.zsh"
+source "${_PROJECT_ROOT}/lib/-cbx-compadd.zsh"
 source "${_PROJECT_ROOT}/lib/cbx-complete.zsh"
 source "${_PROJECT_ROOT}/lib/cbx-enable.zsh"
 source "${_PROJECT_ROOT}/lib/cbx-disable.zsh"
