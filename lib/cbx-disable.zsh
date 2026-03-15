@@ -15,8 +15,9 @@ function cbx-disable() {
   bindkey -M emacs '^I' "${_CBX_ORIG_TAB_EMACS}"
   bindkey -M viins '^I' "${_CBX_ORIG_TAB_VIINS}"
 
-  # Remove the widget.
+  # Remove widgets.
   zle -D cbx-complete
+  zle -D _cbx-apply 2>/dev/null
 
   # Remove compadd wrapper.
   if ((${+functions[compadd]})); then
@@ -35,4 +36,6 @@ function cbx-disable() {
   unset _CBX_ORIG_TAB_EMACS _CBX_ORIG_TAB_VIINS _CBX_ENABLED
   unset _CBX_COMPADD_HAD_FUNCTION
   unset _CBX_CAND_NEXT_ID _CBX_CANDIDATES _CBX_CAND_RAW_ARGS _CBX_IN_COMPLETE 2>/dev/null
+  unset _CBX_POPUP_ACTIVE _CBX_APPLY_ID 2>/dev/null
+  unset _CBX_RESOLVE_PREFIX _CBX_RESOLVE_SUFFIX _CBX_RESOLVE_IPREFIX _CBX_RESOLVE_ISUFFIX 2>/dev/null
 }
