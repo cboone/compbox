@@ -15,5 +15,6 @@
 credentials.json
 token.json
 
-# Benchmarks
+# Benchmarks (ad-hoc runs only; baselines are committed)
 benchmarks/*.json
+!benchmarks/baseline.json
