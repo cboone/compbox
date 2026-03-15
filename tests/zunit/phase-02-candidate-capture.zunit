@@ -1,0 +1,145 @@
+#!/usr/bin/env zunit
+
+@setup {
+  load "helpers/bootstrap.zsh"
+  cbx_load_plugin
+}
+
+@teardown {
+  if (( ${+functions[cbx_reset]} )); then
+    cbx_reset
+  fi
+}
+
+@test 'compadd wrapper uses builtin compadd for real completion bookkeeping' {
+  cbx-enable
+
+  # The compadd shim should be a function after enable.
+  assert "(( ${+functions[compadd]} ))" same_as "(( 1 ))"
+
+  # The shim delegates to -cbx-compadd which calls builtin compadd.
+  assert "(( ${+functions[-cbx-compadd]} ))" same_as "(( 1 ))"
+}
+
+@test 'capture is disabled outside IN_CBX scope' {
+  -cbx-candidate-reset
+
+  # No gate set: capture should not happen.
+  -cbx-compadd -- alpha bravo 2>/dev/null || true
+
+  assert "${#_CBX_CANDIDATES[@]}" same_as "0"
+}
+
+@test 'capture is enabled inside IN_CBX scope' {
+  -cbx-candidate-reset
+  _CBX_IN_COMPLETE=1
+
+  -cbx-compadd -- alpha bravo 2>/dev/null || true
+
+  assert "${#_CBX_CANDIDATES[@]}" same_as "2"
+
+  unset _CBX_IN_COMPLETE
+}
+
+@test 'query-mode calls are not captured even inside gate' {
+  -cbx-candidate-reset
+  _CBX_IN_COMPLETE=1
+
+  -cbx-compadd -O somevar -- alpha bravo 2>/dev/null || true
+
+  assert "${#_CBX_CANDIDATES[@]}" same_as "0"
+
+  unset _CBX_IN_COMPLETE
+}
+
+@test 'metadata fields round-trip through pack and unpack' {
+  -cbx-candidate-reset
+
+  local packed
+  packed="$(-cbx-candidate-pack 1 myword "My Display" mygroup pre suf ipre isuf)"
+
+  local unpacked
+  unpacked="$(-cbx-candidate-unpack "${packed}")"
+
+  local -a lines
+  lines=("${(@f)unpacked}")
+
+  assert "${lines[1]}" same_as "id=1"
+  assert "${lines[2]}" same_as "word=myword"
+  assert "${lines[3]}" same_as "display=My Display"
+  assert "${lines[4]}" same_as "group=mygroup"
+  assert "${lines[5]}" same_as "prefix=pre"
+  assert "${lines[6]}" same_as "suffix=suf"
+  assert "${lines[7]}" same_as "iprefix=ipre"
+  assert "${lines[8]}" same_as "isuffix=isuf"
+}
+
+@test 'enable and disable lifecycle cleans up wrapper state fully' {
+  cbx-enable
+
+  assert "(( ${+functions[compadd]} ))" same_as "(( 1 ))"
+
+  cbx-disable
+
+  # compadd shim should be removed.
+  assert "(( ${+functions[compadd]} ))" same_as "(( 0 ))"
+
+  # Capture globals should be cleaned up.
+  assert "${_CBX_CAND_NEXT_ID:-unset}" same_as "unset"
+  assert "${_CBX_IN_COMPLETE:-unset}" same_as "unset"
+}
+
+@test 'candidate-reset clears all capture state' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo charlie
+
+  assert "${#_CBX_CANDIDATES[@]}" same_as "3"
+  assert "${_CBX_CAND_NEXT_ID}" same_as "3"
+
+  -cbx-candidate-reset
+
+  assert "${#_CBX_CANDIDATES[@]}" same_as "0"
+  assert "${_CBX_CAND_NEXT_ID}" same_as "0"
+  assert "${#_CBX_CAND_RAW_ARGS[@]}" same_as "0"
+}
+
+@test 'IDs are monotonic across multiple compadd calls' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- first second
+  -cbx-capture-from-compadd -- third
+
+  assert "${#_CBX_CANDIDATES[@]}" same_as "3"
+
+  local unpacked
+  unpacked="$(-cbx-candidate-unpack "${_CBX_CANDIDATES[1]}")"
+  assert "$(echo "${unpacked}" | grep '^id=')" same_as "id=1"
+
+  unpacked="$(-cbx-candidate-unpack "${_CBX_CANDIDATES[2]}")"
+  assert "$(echo "${unpacked}" | grep '^id=')" same_as "id=2"
+
+  unpacked="$(-cbx-candidate-unpack "${_CBX_CANDIDATES[3]}")"
+  assert "$(echo "${unpacked}" | grep '^id=')" same_as "id=3"
+}
+
+@test 'compbox.plugin.zsh bootstraps with phase 02 functions available' {
+  local output
+  output="$(
+    zsh -f -c '
+      source "$1/compbox.plugin.zsh"
+      print -r -- "has-compadd-shim=${+functions[compadd]}"
+      print -r -- "has-cbx-compadd=${+functions[-cbx-compadd]}"
+      print -r -- "has-candidate-reset=${+functions[-cbx-candidate-reset]}"
+      print -r -- "has-candidate-pack=${+functions[-cbx-candidate-pack]}"
+      print -r -- "has-candidate-unpack=${+functions[-cbx-candidate-unpack]}"
+    ' _ "${CBX_PROJECT_ROOT}"
+  )"
+
+  local -a lines
+  lines=("${(@f)output}")
+
+  assert "${lines[1]}" same_as "has-compadd-shim=1"
+  assert "${lines[2]}" same_as "has-cbx-compadd=1"
+  assert "${lines[3]}" same_as "has-candidate-reset=1"
+  assert "${lines[4]}" same_as "has-candidate-pack=1"
+  assert "${lines[5]}" same_as "has-candidate-unpack=1"
+}
