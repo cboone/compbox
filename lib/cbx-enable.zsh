@@ -29,5 +29,8 @@ function cbx-enable() {
   bindkey -M emacs '^I' cbx-complete
   bindkey -M viins '^I' cbx-complete
 
+  # Install compadd wrapper for candidate capture.
+  function compadd() { -cbx-compadd "${@}"; }
+
   typeset -gi _CBX_ENABLED=1
 }
