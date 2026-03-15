@@ -44,9 +44,11 @@ function check_deps() {
 
 function require_fixtures() {
   local -a required_fixtures=(
+    "${FIXTURES_DIR}/lifecycle-only.zsh"
     "${FIXTURES_DIR}/noop-plugin.zsh"
     "${FIXTURES_DIR}/noop-plugin-startup.zsh"
     "${FIXTURES_DIR}/pass-through-tab.zsh"
+    "${FIXTURES_DIR}/stock-compinit.zsh"
     "${FIXTURES_DIR}/stock-completion.zsh"
   )
 
@@ -67,29 +69,36 @@ function configure_scenarios() {
 
   case "${mode}" in
   baseline)
+    BENCH_SCENARIO_NAMES+=("stock-compinit")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-compinit.zsh")
+    BENCH_SCENARIO_NAMES+=("lifecycle-only")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/lifecycle-only.zsh")
     BENCH_SCENARIO_NAMES+=("stock-completion")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
-    BENCH_SCENARIO_NAMES+=("noop-plugin-startup")
-    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
     BENCH_SCENARIO_NAMES+=("pass-through-tab")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/pass-through-tab.zsh")
     ;;
   smoke)
-    # Small fixture set for CI smoke validation.
+    BENCH_SCENARIO_NAMES+=("stock-compinit")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-compinit.zsh")
+    BENCH_SCENARIO_NAMES+=("lifecycle-only")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/lifecycle-only.zsh")
     BENCH_SCENARIO_NAMES+=("stock-completion")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
-    BENCH_SCENARIO_NAMES+=("noop-plugin-startup")
-    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
     BENCH_SCENARIO_NAMES+=("pass-through-tab")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/pass-through-tab.zsh")
     ;;
   full)
     BENCH_SCENARIO_NAMES+=("stock-zsh")
     BENCH_SCENARIO_COMMANDS+=("zsh -f -c 'exit'")
-    BENCH_SCENARIO_NAMES+=("stock-completion")
-    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
+    BENCH_SCENARIO_NAMES+=("stock-compinit")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-compinit.zsh")
     BENCH_SCENARIO_NAMES+=("noop-plugin-startup")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/noop-plugin-startup.zsh")
+    BENCH_SCENARIO_NAMES+=("lifecycle-only")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/lifecycle-only.zsh")
+    BENCH_SCENARIO_NAMES+=("stock-completion")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
     BENCH_SCENARIO_NAMES+=("pass-through-tab")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/pass-through-tab.zsh")
     ;;
@@ -157,7 +166,7 @@ function print_delta() {
     color_p95="${C_YELLOW}"
   fi
 
-  printf "  %-24s p50=${color_p50}%+7s ms${C_RESET}   p95=${color_p95}%+7s ms${C_RESET}\n" "delta" "${delta_p50}" "${delta_p95}"
+  printf "p50=${color_p50}%+7s ms${C_RESET}   p95=${color_p95}%+7s ms${C_RESET}\n" "${delta_p50}" "${delta_p95}"
 }
 
 function run_benchmarks() {
@@ -171,7 +180,7 @@ function run_benchmarks() {
     print "Running baseline benchmarks (${runs} iterations, ${WARMUP} warmup)..."
   elif [[ "${mode}" == "smoke" ]]; then
     print "Running smoke benchmarks (${runs} iterations, ${WARMUP} warmup)..."
-    print "Fixture set: small (stock completion, no-op plugin startup, and pass-through Tab)."
+    print "Fixture set: lifecycle and end-to-end completion."
   else
     print "Running full benchmarks (${runs} iterations, ${WARMUP} warmup)..."
   fi
@@ -202,15 +211,28 @@ function run_benchmarks() {
     extract_stats "${json_out}" "${scenario}" "${runs}"
   done
 
-  # Show lifecycle overhead delta when both scenarios are present.
-  local has_stock=0 has_passthrough=0
+  # Show lifecycle overhead deltas when paired scenarios are present.
+  local -A has_scenario
   for scenario in "${BENCH_SCENARIO_NAMES[@]}"; do
-    [[ "${scenario}" == "stock-completion" ]] && has_stock=1
-    [[ "${scenario}" == "pass-through-tab" ]] && has_passthrough=1
+    has_scenario[${scenario}]=1
   done
-  if ((has_stock && has_passthrough)); then
+
+  local printed_header=0
+
+  if ((${+has_scenario[stock-compinit]} && ${+has_scenario[lifecycle-only]})); then
     print ""
-    print "${C_BOLD}Lifecycle overhead${C_RESET} (pass-through-tab vs stock-completion)"
+    print "${C_BOLD}Lifecycle overhead${C_RESET}"
+    printed_header=1
+    printf "  %-38s" "lifecycle-only vs stock-compinit"
+    print_delta "${json_out}" "stock-compinit" "lifecycle-only"
+  fi
+
+  if ((${+has_scenario[stock-completion]} && ${+has_scenario[pass-through-tab]})); then
+    if ((!printed_header)); then
+      print ""
+      print "${C_BOLD}Lifecycle overhead${C_RESET}"
+    fi
+    printf "  %-38s" "pass-through-tab vs stock-completion"
     print_delta "${json_out}" "stock-completion" "pass-through-tab"
   fi
 }
