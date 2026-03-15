@@ -34,6 +34,8 @@ function -cbx-capture-from-compadd() {
   emulate -L zsh
   setopt NO_UNSET PIPE_FAIL
 
+  cbx_bench_mark "capture-start"
+
   # Store raw args for replay.
   typeset -ga _CBX_CAND_RAW_ARGS
   _CBX_CAND_RAW_ARGS+=("${(j: :)${(q)@}}")
@@ -119,6 +121,8 @@ function -cbx-capture-from-compadd() {
     words=("${expanded[@]}")
   fi
 
+  cbx_bench_mark "capture-parsed"
+
   # Extract display strings from -d array variable.
   local -a displays=()
   if [[ -n "${display_var}" ]]; then
@@ -150,4 +154,8 @@ function -cbx-capture-from-compadd() {
       "${cur_iprefix}" "${cur_isuffix}")"
     _CBX_CANDIDATES+=("${packed}")
   done
+
+  cbx_bench_mark "capture-packed"
+  cbx_bench_record_elapsed "capture-start" "capture-parsed" "capture-parse"
+  cbx_bench_record_elapsed "capture-parsed" "capture-packed" "capture-pack"
 }
