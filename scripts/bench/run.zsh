@@ -40,6 +40,10 @@ function check_deps() {
     print "expect not found. Install it with: brew install expect" >&2
     return 1
   fi
+  if ! command -v bc >/dev/null 2>&1; then
+    print "bc not found. Install it with: brew install bc" >&2
+    return 1
+  fi
 }
 
 function require_fixtures() {
