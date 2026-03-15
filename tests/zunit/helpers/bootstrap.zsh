@@ -18,6 +18,8 @@ if [[ -z "${CBX_ZUNIT_ROOT:-}" ]]; then
   # Add files here as they are created in later phases.
   typeset -ga CBX_PLUGIN_SOURCES=(
     "lib/bench/timing.zsh"
+    "lib/-cbx-candidate-store.zsh"
+    "lib/-cbx-compadd.zsh"
     "lib/cbx-complete.zsh"
     "lib/cbx-enable.zsh"
     "lib/cbx-disable.zsh"
@@ -37,6 +39,10 @@ if [[ -z "${CBX_ZUNIT_ROOT:-}" ]]; then
     _CBX_ORIG_TAB_VIINS
     _CBX_PLUGIN_SOURCED
     _CBX_PLUGIN_ROOT
+    _CBX_CAND_NEXT_ID
+    _CBX_CANDIDATES
+    _CBX_CAND_RAW_ARGS
+    _CBX_IN_COMPLETE
   )
 fi
 

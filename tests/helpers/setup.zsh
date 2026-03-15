@@ -14,6 +14,8 @@ readonly CBX_PROJECT_ROOT="${CBX_TEST_ROOT:h}"
 # Add files here as they are created in later phases.
 readonly -a CBX_PLUGIN_SOURCES=(
   "lib/bench/timing.zsh"
+  "lib/-cbx-candidate-store.zsh"
+  "lib/-cbx-compadd.zsh"
   "lib/cbx-complete.zsh"
   "lib/cbx-enable.zsh"
   "lib/cbx-disable.zsh"
@@ -33,6 +35,10 @@ readonly -a CBX_TEST_GLOBALS_TO_RESET=(
   _CBX_ORIG_TAB_VIINS
   _CBX_PLUGIN_SOURCED
   _CBX_PLUGIN_ROOT
+  _CBX_CAND_NEXT_ID
+  _CBX_CANDIDATES
+  _CBX_CAND_RAW_ARGS
+  _CBX_IN_COMPLETE
 )
 
 function cbx_test_setup() {
