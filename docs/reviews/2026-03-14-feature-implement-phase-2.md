@@ -11,43 +11,43 @@ This branch implements Phase 02 of the compbox plugin: candidate capture and dat
 
 ### Changes by Area
 
-**Core capture logic**
+#### Core capture logic
 
 The two new library files form the heart of the phase. `lib/-cbx-compadd.zsh` provides the `compadd` wrapper (`-cbx-compadd`) that delegates to `builtin compadd`, then captures candidates when inside the `_CBX_IN_COMPLETE` gate, skipping query-mode calls (`-O`, `-A`, `-D`). It parses compadd's complex option syntax to extract group (`-J`/`-V`), display array (`-d`), and handles `-a` (indexed array) and `-k` (associative array keys) expansion. `lib/-cbx-candidate-store.zsh` provides reset, pack, and unpack helpers for the tab-separated candidate record format.
 
 Files: `lib/-cbx-compadd.zsh`, `lib/-cbx-candidate-store.zsh`
 
-**Lifecycle integration**
+#### Lifecycle integration
 
 Phase 02 capture is woven into the existing Phase 01 lifecycle. Enable installs the `compadd` shim function (preserving any pre-existing wrapper for restore on disable). Disable removes the shim, restores any pre-existing wrapper, and cleans up capture globals. The completion widget resets capture state and sets/clears the `_CBX_IN_COMPLETE` gate around dispatch.
 
 Files: `lib/cbx-enable.zsh`, `lib/cbx-disable.zsh`, `lib/cbx-complete.zsh`, `compbox.plugin.zsh`
 
-**Tests**
+#### Tests
 
 Comprehensive scrut snapshot tests (12 test sections) verify packed candidate output, ID monotonicity, gate/query-mode exclusion, duplicate handling, reset behavior, display overrides, `-V` group capture, `-a`/`-k` array expansion, and raw args storage. Zunit tests (14 test cases) verify wrapper installation, gate behavior, pack/unpack round-trip, backslash literal preservation, `-a`/`-k` expansion, lifecycle cleanup, pre-existing wrapper restoration, reset, ID monotonicity, and plugin bootstrap.
 
 Files: `tests/scrut/phase-02-candidate-capture.md`, `tests/zunit/phase-02-candidate-capture.zunit`
 
-**Test harnesses**
+#### Test harnesses
 
 Both test bootstrap files updated to register the two new Phase 02 source files and four new capture globals in the reset lists. Smoke test source count updated from 7 to 9.
 
 Files: `tests/helpers/setup.zsh`, `tests/zunit/helpers/bootstrap.zsh`, `tests/scrut/smoke.md`
 
-**Performance and benchmarking**
+#### Performance and benchmarking
 
 Benchmark hooks (`cbx_bench_mark`, `cbx_bench_record_elapsed`) added at three capture stages (start, parsed, packed). The lifecycle-only benchmark fixture now sources Phase 02 files. Candidate packing was optimized by inlining the tab-separated string concatenation directly instead of calling `-cbx-candidate-pack` in a subshell, eliminating one `fork()` per completion word and reducing pass-through overhead from ~4.4ms to ~2.3ms (p50).
 
 Files: `scripts/bench/fixtures/lifecycle-only.zsh`, `benchmarks/baseline.json`
 
-**Developer tooling**
+#### Developer tooling
 
 A `cbx-dump` helper was added to the manual test shell for inspecting captured candidates after pressing Tab. The check-zsh script added SC2215 to the shellcheck exclusion list. Cspell dictionary updated with Phase 02 terms.
 
 Files: `scripts/manual-test.zsh`, `scripts/check-zsh.zsh`, `cspell.json`
 
-**Documentation**
+#### Documentation
 
 The Phase 02 plan was aligned with Phase 01 implementation patterns.
 
@@ -100,7 +100,7 @@ Files: `docs/plans/2026-03-11-phase-02-candidate-capture-data-model.md`
 #### Interception (4/4 done)
 
 - **Add shell-level compadd shim that delegates to internal `-cbx-compadd`**: Done. `cbx-enable` installs `function compadd() { -cbx-compadd "${@}"; }`.
-- **Install and remove the shim in cbx-enable and cbx-disable while keeping lifecycle idempotent**: Done. Both functions handle idempotent checks, and disable properly unfunctions the shim.
+- **Install and remove the shim in cbx-enable and cbx-disable while keeping lifecycle idempotent**: Done. Both functions handle idempotent checks, and disable properly removes the shim via `unfunction`.
 - **Pass through query-mode calls (-O, -A, -D) without capture**: Done. `-cbx-compadd` scans args for these flags and returns early.
 - **Capture only inside plugin-controlled completion invocation (IN_CBX gate)**: Done. `_CBX_IN_COMPLETE` is set in `cbx-complete` and checked in `-cbx-compadd`.
 
