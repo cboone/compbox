@@ -23,12 +23,13 @@ function -cbx-candidate-pack() {
   local suffix="${6}"
   local iprefix="${7}"
   local isuffix="${8}"
+  local call_idx="${9}"
 
   # Packed format: tab-separated fields in fixed order.
-  # id<TAB>word<TAB>display<TAB>group<TAB>prefix<TAB>suffix<TAB>iprefix<TAB>isuffix
+  # id<TAB>word<TAB>display<TAB>group<TAB>prefix<TAB>suffix<TAB>iprefix<TAB>isuffix<TAB>call_idx
   # NOTE: Production packing is inlined in -cbx-capture-from-compadd to avoid
   # subshell forks. This function is used in tests for round-trip verification.
-  printf '%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
+  printf '%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d' \
     "${id}" \
     "${word}" \
     "${display}" \
@@ -36,7 +37,8 @@ function -cbx-candidate-pack() {
     "${prefix}" \
     "${suffix}" \
     "${iprefix}" \
-    "${isuffix}"
+    "${isuffix}" \
+    "${call_idx}"
 }
 
 function -cbx-candidate-unpack() {
@@ -62,4 +64,5 @@ function -cbx-candidate-unpack() {
   print -r -- "suffix=${fields[6]}"
   print -r -- "iprefix=${fields[7]}"
   print -r -- "isuffix=${fields[8]}"
+  print -r -- "call_idx=${fields[9]}"
 }

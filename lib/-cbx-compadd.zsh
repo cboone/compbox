@@ -36,9 +36,10 @@ function -cbx-capture-from-compadd() {
 
   cbx_bench_mark "capture-start"
 
-  # Store raw args for replay.
+  # Store raw args for replay. Track the call index for source-call linkage.
   typeset -ga _CBX_CAND_RAW_ARGS
   _CBX_CAND_RAW_ARGS+=("${(j: :)${(q)@}}")
+  local call_idx=${#_CBX_CAND_RAW_ARGS[@]}
 
   local group="" display_var=""
   local -a words=()
@@ -148,7 +149,7 @@ function -cbx-capture-from-compadd() {
     ((idx++))
     ((_CBX_CAND_NEXT_ID++))
     disp="${displays[${idx}]:-${w}}"
-    _CBX_CANDIDATES+=("${_CBX_CAND_NEXT_ID}${tab}${w}${tab}${disp}${tab}${group}${tab}${cur_prefix}${tab}${cur_suffix}${tab}${cur_iprefix}${tab}${cur_isuffix}")
+    _CBX_CANDIDATES+=("${_CBX_CAND_NEXT_ID}${tab}${w}${tab}${disp}${tab}${group}${tab}${cur_prefix}${tab}${cur_suffix}${tab}${cur_iprefix}${tab}${cur_isuffix}${tab}${call_idx}")
   done
 
   cbx_bench_mark "capture-packed"
