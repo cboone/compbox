@@ -185,6 +185,41 @@ $ source "${TESTDIR}/../helpers/setup.zsh" &&
 group=unsorted-group
 ```
 
+## Words from -a array flag are expanded into candidates
+
+```scrut
+$ source "${TESTDIR}/../helpers/setup.zsh" &&
+>   cbx_test_setup &&
+>   -cbx-candidate-reset &&
+>   local -a mymatches=(file1 file2 file3) &&
+>   -cbx-capture-from-compadd -a mymatches &&
+>   echo "count: ${#_CBX_CANDIDATES[@]}" &&
+>   for packed in "${_CBX_CANDIDATES[@]}"; do
+>     -cbx-candidate-unpack "${packed}" | grep '^word='
+>   done
+count: 3
+word=file1
+word=file2
+word=file3
+```
+
+## Words from -k associative array flag use keys as candidates
+
+```scrut
+$ source "${TESTDIR}/../helpers/setup.zsh" &&
+>   cbx_test_setup &&
+>   -cbx-candidate-reset &&
+>   local -A myassoc=(opt1 "desc1" opt2 "desc2") &&
+>   -cbx-capture-from-compadd -k myassoc &&
+>   echo "count: ${#_CBX_CANDIDATES[@]}" &&
+>   for packed in "${_CBX_CANDIDATES[@]}"; do
+>     -cbx-candidate-unpack "${packed}" | grep '^word='
+>   done | sort
+count: 2
+word=opt1
+word=opt2
+```
+
 ## Raw compadd args are stored for replay
 
 ```scrut

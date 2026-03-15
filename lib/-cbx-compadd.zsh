@@ -43,6 +43,8 @@ function -cbx-capture-from-compadd() {
   local found_sep=0
   local skip_next=0
   local prev=""
+  local from_arrays=0
+  local from_keys=0
 
   # Manual option parsing: extract metadata and collect positional words.
   local arg
@@ -84,10 +86,38 @@ function -cbx-capture-from-compadd() {
       prev="${arg}"
       ;;
     -[XPSpsiIWrRMFExoOADE]?*) ;;
+    -a*) from_arrays=1 ;;
+    -k*) from_keys=1 ;;
     -*) ;;
     *) words+=("${arg}") ;;
     esac
   done
+
+  # When -a is set, positional args are array variable names.
+  # Expand them to get the actual completion words.
+  if ((from_arrays)); then
+    local -a expanded=()
+    local arr_name
+    for arr_name in "${words[@]}"; do
+      if ((${(P)+arr_name})); then
+        expanded+=("${(@P)arr_name}")
+      fi
+    done
+    words=("${expanded[@]}")
+  fi
+
+  # When -k is set, positional args are associative array variable names.
+  # Expand their keys to get the actual completion words.
+  if ((from_keys)); then
+    local -a expanded=()
+    local arr_name
+    for arr_name in "${words[@]}"; do
+      if ((${(P)+arr_name})); then
+        expanded+=("${(@kP)arr_name}")
+      fi
+    done
+    words=("${expanded[@]}")
+  fi
 
   # Extract display strings from -d array variable.
   local -a displays=()

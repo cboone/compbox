@@ -74,6 +74,29 @@
   assert "${lines[8]}" same_as "isuffix=isuf"
 }
 
+@test 'compadd -a expands array variable into candidates' {
+  -cbx-candidate-reset
+  local -a myfiles=(alpha bravo charlie)
+  -cbx-capture-from-compadd -a myfiles
+
+  assert "${#_CBX_CANDIDATES[@]}" same_as "3"
+
+  local unpacked
+  unpacked="$(-cbx-candidate-unpack "${_CBX_CANDIDATES[1]}")"
+  assert "$(echo "${unpacked}" | grep '^word=')" same_as "word=alpha"
+
+  unpacked="$(-cbx-candidate-unpack "${_CBX_CANDIDATES[3]}")"
+  assert "$(echo "${unpacked}" | grep '^word=')" same_as "word=charlie"
+}
+
+@test 'compadd -k expands associative array keys into candidates' {
+  -cbx-candidate-reset
+  local -A myopts=(opt1 "desc1" opt2 "desc2")
+  -cbx-capture-from-compadd -k myopts
+
+  assert "${#_CBX_CANDIDATES[@]}" same_as "2"
+}
+
 @test 'enable and disable lifecycle cleans up wrapper state fully' {
   cbx-enable
 
