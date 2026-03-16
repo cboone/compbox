@@ -17,6 +17,12 @@ readonly DEFAULT_RUNS=100
 readonly SMOKE_RUNS=10
 readonly WARMUP=5
 
+# Budget thresholds (milliseconds). If a delta exceeds these, it is flagged.
+readonly BUDGET_LIFECYCLE_P50=3  # lifecycle-only vs stock-compinit p50
+readonly BUDGET_LIFECYCLE_P95=5  # lifecycle-only vs stock-compinit p95
+readonly BUDGET_COMPLETION_P50=5 # pass-through-tab vs stock-completion p50
+readonly BUDGET_COMPLETION_P95=8 # pass-through-tab vs stock-completion p95
+
 typeset -ga BENCH_SCENARIO_NAMES=()
 typeset -ga BENCH_SCENARIO_COMMANDS=()
 
@@ -25,6 +31,7 @@ readonly C_BOLD=$'\e[1m'
 readonly C_GREEN=$'\e[1;32m'
 readonly C_CYAN=$'\e[1;36m'
 readonly C_YELLOW=$'\e[1;33m'
+readonly C_RED=$'\e[1;31m'
 readonly C_RESET=$'\e[0m'
 
 function check_deps() {
@@ -138,6 +145,8 @@ function print_delta() {
   local json_file="${1}"
   local baseline="${2}"
   local target="${3}"
+  local budget_p50="${4:-0}"
+  local budget_p95="${5:-0}"
 
   local base_p50 target_p50 base_p95 target_p95
   base_p50="$(jq -r --arg s "${baseline}" '.results[] | select(.command == $s) | .median' "${json_file}")"
@@ -170,7 +179,25 @@ function print_delta() {
     color_p95="${C_YELLOW}"
   fi
 
-  printf "p50=${color_p50}%+7s ms${C_RESET}   p95=${color_p95}%+7s ms${C_RESET}\n" "${delta_p50}" "${delta_p95}"
+  printf "p50=${color_p50}%+7s ms${C_RESET}   p95=${color_p95}%+7s ms${C_RESET}" "${delta_p50}" "${delta_p95}"
+
+  # Print budget verdict when thresholds are provided.
+  if ((budget_p50 > 0 || budget_p95 > 0)); then
+    local over_budget=0
+    if (($(echo "${abs_p50} > ${budget_p50}" | bc -l))); then
+      over_budget=1
+    fi
+    if (($(echo "${abs_p95} > ${budget_p95}" | bc -l))); then
+      over_budget=1
+    fi
+    if ((over_budget)); then
+      printf "   ${C_RED}OVER BUDGET${C_RESET} (p50<%dms, p95<%dms)" "${budget_p50}" "${budget_p95}"
+    else
+      printf "   ${C_GREEN}within budget${C_RESET} (p50<%dms, p95<%dms)" "${budget_p50}" "${budget_p95}"
+    fi
+  fi
+
+  print ""
 }
 
 function run_benchmarks() {
@@ -228,7 +255,8 @@ function run_benchmarks() {
     print "${C_BOLD}Lifecycle overhead${C_RESET}"
     printed_header=1
     printf "  %-38s" "lifecycle-only vs stock-compinit"
-    print_delta "${json_out}" "stock-compinit" "lifecycle-only"
+    print_delta "${json_out}" "stock-compinit" "lifecycle-only" \
+      "${BUDGET_LIFECYCLE_P50}" "${BUDGET_LIFECYCLE_P95}"
   fi
 
   if ((${+has_scenario[stock-completion]} && ${+has_scenario[pass-through-tab]})); then
@@ -237,7 +265,8 @@ function run_benchmarks() {
       print "${C_BOLD}Lifecycle overhead${C_RESET}"
     fi
     printf "  %-38s" "pass-through-tab vs stock-completion"
-    print_delta "${json_out}" "stock-completion" "pass-through-tab"
+    print_delta "${json_out}" "stock-completion" "pass-through-tab" \
+      "${BUDGET_COMPLETION_P50}" "${BUDGET_COMPLETION_P95}"
   fi
 }
 
