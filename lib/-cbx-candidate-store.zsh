@@ -9,6 +9,7 @@ function -cbx-candidate-reset() {
   typeset -gi _CBX_CAND_NEXT_ID=0
   typeset -ga _CBX_CANDIDATES=()
   typeset -ga _CBX_CAND_RAW_ARGS=()
+  typeset -gi _CBX_NMATCHES=0
 }
 
 function -cbx-candidate-pack() {

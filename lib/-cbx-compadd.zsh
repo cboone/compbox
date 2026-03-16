@@ -25,6 +25,11 @@ function -cbx-compadd() {
     esac
   done
 
+  # Track the actual match count from the completion system.
+  # compstate[nmatches] is available inside the completion context
+  # and reflects the total matches added so far across all compadd calls.
+  typeset -gi _CBX_NMATCHES="${compstate[nmatches]:-0}"
+
   # Only capture when compadd actually added matches. builtin compadd
   # returns 0 when at least one word matched the current prefix.
   if ((ret == 0)); then

@@ -147,6 +147,7 @@ not found
 $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   cbx_test_setup &&
 >   -cbx-candidate-reset &&
+>   _CBX_NMATCHES=0 &&
 >   -cbx-complete-should-popup &&
 >   echo "popup: yes" ||
 >   echo "popup: no"
@@ -159,7 +160,7 @@ popup: no
 $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   cbx_test_setup &&
 >   -cbx-candidate-reset &&
->   -cbx-capture-from-compadd -- only-one &&
+>   _CBX_NMATCHES=1 &&
 >   -cbx-complete-should-popup &&
 >   echo "popup: yes" ||
 >   echo "popup: no"
@@ -172,7 +173,7 @@ popup: no
 $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   cbx_test_setup &&
 >   -cbx-candidate-reset &&
->   -cbx-capture-from-compadd -- alpha bravo charlie &&
+>   _CBX_NMATCHES=5 &&
 >   -cbx-complete-should-popup &&
 >   echo "popup: yes" ||
 >   echo "popup: no"
