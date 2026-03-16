@@ -117,7 +117,10 @@ $ source "${TESTDIR}/../helpers/setup.zsh" &&
 count: 0
 ```
 
-## Inside-gate compadd calls are captured
+## Wrapper skips capture when compadd reports no matches
+
+Outside a completion context, `builtin compadd` returns non-zero. The
+wrapper only captures when compadd actually adds matches (returns 0).
 
 ```scrut
 $ source "${TESTDIR}/../helpers/setup.zsh" &&
@@ -126,7 +129,7 @@ $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   _CBX_IN_COMPLETE=1 &&
 >   -cbx-compadd -- alpha bravo 2>/dev/null;
 >   echo "count: ${#_CBX_CANDIDATES[@]}"
-count: 2
+count: 0
 ```
 
 ## Duplicate display strings remain distinct by id

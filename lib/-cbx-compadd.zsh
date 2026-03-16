@@ -25,7 +25,11 @@ function -cbx-compadd() {
     esac
   done
 
-  -cbx-capture-from-compadd "${@}" || true
+  # Only capture when compadd actually added matches. builtin compadd
+  # returns 0 when at least one word matched the current prefix.
+  if ((ret == 0)); then
+    -cbx-capture-from-compadd "${@}" || true
+  fi
 
   return ${ret}
 }

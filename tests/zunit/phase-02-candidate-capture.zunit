@@ -30,13 +30,15 @@
   assert "${#_CBX_CANDIDATES[@]}" same_as "0"
 }
 
-@test 'capture is enabled inside IN_CBX scope' {
+@test 'wrapper skips capture when compadd reports no matches' {
   -cbx-candidate-reset
   _CBX_IN_COMPLETE=1
 
+  # Outside a completion context, builtin compadd returns non-zero.
+  # The wrapper only captures when compadd actually adds matches.
   -cbx-compadd -- alpha bravo 2>/dev/null || true
 
-  assert "${#_CBX_CANDIDATES[@]}" same_as "2"
+  assert "${#_CBX_CANDIDATES[@]}" same_as "0"
 
   unset _CBX_IN_COMPLETE
 }
