@@ -22,6 +22,8 @@ if [[ -z "${CBX_ZUNIT_ROOT:-}" ]]; then
     "lib/-cbx-compadd.zsh"
     "lib/-cbx-apply.zsh"
     "lib/-cbx-complete.zsh"
+    "lib/position.zsh"
+    "lib/screen.zsh"
     "lib/navigate.zsh"
     "lib/render.zsh"
     "lib/keymap.zsh"
@@ -60,6 +62,18 @@ if [[ -z "${CBX_ZUNIT_ROOT:-}" ]]; then
     _CBX_POPUP_SELECTED
     _CBX_POPUP_ACTION
     _CBX_POPUP_RENDERED_LINES
+    _CBX_CURSOR_ROW
+    _CBX_CURSOR_COL
+    _CBX_PANE_HEIGHT
+    _CBX_PANE_WIDTH
+    _CBX_POPUP_ROW
+    _CBX_POPUP_COL
+    _CBX_POPUP_HEIGHT
+    _CBX_POPUP_WIDTH
+    _CBX_POPUP_DIRECTION
+    _CBX_SCREEN_SAVED
+    _CBX_SCREEN_SAVE_START
+    _CBX_SCREEN_SAVE_END
   )
 fi
 
