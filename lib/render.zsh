@@ -12,6 +12,7 @@ function -cbx-popup-render-buffer() {
 
   local row_count="${#_CBX_POPUP_ROWS[@]}"
   if ((row_count == 0)); then
+    typeset -gi _CBX_POPUP_RENDERED_LINES=0
     REPLY=""
     return
   fi
