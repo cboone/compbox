@@ -25,6 +25,9 @@ function cbx-enable() {
   # Register the pass-through completion widget.
   zle -N cbx-complete
 
+  # Register the apply completion widget for id-based insertion.
+  zle -C _cbx-apply complete-word -cbx-apply
+
   # Bind Tab to our widget in both keymaps.
   bindkey -M emacs '^I' cbx-complete
   bindkey -M viins '^I' cbx-complete

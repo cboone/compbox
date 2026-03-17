@@ -19,4 +19,14 @@ function cbx-complete() {
 
   # Clear capture gate.
   unset _CBX_IN_COMPLETE
+
+  # Determine whether the custom popup path should activate.
+  # Stock behavior is preserved for no-match and single-match cases.
+  # Menu suppression applies only when the custom popup is actually
+  # entering (Phase 4+).
+  if -cbx-complete-should-popup; then
+    typeset -gi _CBX_POPUP_ACTIVE=1
+  else
+    typeset -gi _CBX_POPUP_ACTIVE=0
+  fi
 }

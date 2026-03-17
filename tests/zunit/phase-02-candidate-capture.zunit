@@ -30,13 +30,15 @@
   assert "${#_CBX_CANDIDATES[@]}" same_as "0"
 }
 
-@test 'capture is enabled inside IN_CBX scope' {
+@test 'wrapper skips capture when compadd reports no matches' {
   -cbx-candidate-reset
   _CBX_IN_COMPLETE=1
 
+  # Outside a completion context, builtin compadd returns non-zero.
+  # The wrapper only captures when compadd actually adds matches.
   -cbx-compadd -- alpha bravo 2>/dev/null || true
 
-  assert "${#_CBX_CANDIDATES[@]}" same_as "2"
+  assert "${#_CBX_CANDIDATES[@]}" same_as "0"
 
   unset _CBX_IN_COMPLETE
 }
@@ -56,7 +58,7 @@
   -cbx-candidate-reset
 
   local packed
-  packed="$(-cbx-candidate-pack 1 myword "My Display" mygroup pre suf ipre isuf)"
+  packed="$(-cbx-candidate-pack 1 myword "My Display" mygroup pre suf ipre isuf 1)"
 
   local unpacked
   unpacked="$(-cbx-candidate-unpack "${packed}")"
@@ -72,6 +74,7 @@
   assert "${lines[6]}" same_as "suffix=suf"
   assert "${lines[7]}" same_as "iprefix=ipre"
   assert "${lines[8]}" same_as "isuffix=isuf"
+  assert "${lines[9]}" same_as "call_idx=1"
 }
 
 @test 'unpack preserves backslash literals in fields' {
@@ -83,7 +86,7 @@
   local display="Label${backslash}tX"
 
   local packed
-  packed="$(-cbx-candidate-pack 1 "${word}" "${display}" mygroup pre suf ipre isuf)"
+  packed="$(-cbx-candidate-pack 1 "${word}" "${display}" mygroup pre suf ipre isuf 1)"
 
   local unpacked_bytes
   unpacked_bytes="$(-cbx-candidate-unpack "${packed}" | od -An -tx1)"
