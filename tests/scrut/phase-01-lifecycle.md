@@ -110,6 +110,8 @@ $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   _CBX_ORIG_TAB_EMACS="expand-or-complete" &&
 >   _CBX_ORIG_TAB_VIINS="vi-expand-or-complete" &&
 >   KEYMAP="viins" &&
+>   BUFFER="" &&
+>   CURSOR=0 &&
 >   cbx-complete
 called: vi-expand-or-complete
 ```
@@ -123,6 +125,8 @@ $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   _CBX_ORIG_TAB_EMACS="expand-or-complete" &&
 >   _CBX_ORIG_TAB_VIINS="vi-expand-or-complete" &&
 >   KEYMAP="main" &&
+>   BUFFER="" &&
+>   CURSOR=0 &&
 >   cbx-complete
 called: expand-or-complete
 ```

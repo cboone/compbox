@@ -359,7 +359,8 @@
   cbx-enable
 
   # Simulate popup state.
-  typeset -ga _CBX_POPUP_ROWS=("1${$'\t'}test")
+  local tab=$'\t'
+  typeset -ga _CBX_POPUP_ROWS=("1${tab}test")
   typeset -gi _CBX_POPUP_SELECTED=1
   typeset -g _CBX_POPUP_ACTION="accept"
   typeset -gi _CBX_POPUP_RENDERED_LINES=3

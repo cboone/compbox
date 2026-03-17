@@ -5,6 +5,9 @@
 # multi-match results with cyclical navigation and accept/cancel.
 
 function cbx-complete() {
+  emulate -L zsh
+  setopt NO_UNSET PIPE_FAIL
+
   # Reset capture state for this completion invocation.
   -cbx-candidate-reset
 
