@@ -1,0 +1,262 @@
+#!/usr/bin/env zunit
+
+@setup {
+  load "helpers/bootstrap.zsh"
+  cbx_load_plugin
+}
+
+@teardown {
+  if (( ${+functions[cbx_reset]} )); then
+    cbx_reset
+  fi
+}
+
+@test 'row projection produces correct count from candidates' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo charlie
+
+  -cbx-popup-rows-from-candidates
+
+  assert "${#_CBX_POPUP_ROWS[@]}" same_as "3"
+}
+
+@test 'row projection extracts id and display from candidates' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo
+
+  -cbx-popup-rows-from-candidates
+
+  local tab=$'\t'
+  local id1="${_CBX_POPUP_ROWS[1]%%${tab}*}"
+  local disp1="${_CBX_POPUP_ROWS[1]#*${tab}}"
+  local id2="${_CBX_POPUP_ROWS[2]%%${tab}*}"
+  local disp2="${_CBX_POPUP_ROWS[2]#*${tab}}"
+
+  assert "${id1}" same_as "1"
+  assert "${disp1}" same_as "alpha"
+  assert "${id2}" same_as "2"
+  assert "${disp2}" same_as "bravo"
+}
+
+@test 'row projection uses display labels from -d array' {
+  -cbx-candidate-reset
+  local -a descs=("Alpha Label" "Bravo Label")
+  -cbx-capture-from-compadd -d descs -- alpha bravo
+
+  -cbx-popup-rows-from-candidates
+
+  local tab=$'\t'
+  local disp1="${_CBX_POPUP_ROWS[1]#*${tab}}"
+  local disp2="${_CBX_POPUP_ROWS[2]#*${tab}}"
+
+  assert "${disp1}" same_as "Alpha Label"
+  assert "${disp2}" same_as "Bravo Label"
+}
+
+@test 'navigation next increments selected index' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo charlie
+  -cbx-popup-rows-from-candidates
+  typeset -gi _CBX_POPUP_SELECTED=1
+
+  -cbx-popup-next
+
+  assert "${_CBX_POPUP_SELECTED}" same_as "2"
+}
+
+@test 'navigation prev decrements selected index' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo charlie
+  -cbx-popup-rows-from-candidates
+  typeset -gi _CBX_POPUP_SELECTED=2
+
+  -cbx-popup-prev
+
+  assert "${_CBX_POPUP_SELECTED}" same_as "1"
+}
+
+@test 'navigation next wraps from bottom to top' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo charlie
+  -cbx-popup-rows-from-candidates
+  typeset -gi _CBX_POPUP_SELECTED=3
+
+  -cbx-popup-next
+
+  assert "${_CBX_POPUP_SELECTED}" same_as "1"
+}
+
+@test 'navigation prev wraps from top to bottom' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo charlie
+  -cbx-popup-rows-from-candidates
+  typeset -gi _CBX_POPUP_SELECTED=1
+
+  -cbx-popup-prev
+
+  assert "${_CBX_POPUP_SELECTED}" same_as "3"
+}
+
+@test 'navigation with single-element list stays at 1' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- only
+  -cbx-popup-rows-from-candidates
+  typeset -gi _CBX_POPUP_SELECTED=1
+
+  -cbx-popup-next
+  assert "${_CBX_POPUP_SELECTED}" same_as "1"
+
+  -cbx-popup-prev
+  assert "${_CBX_POPUP_SELECTED}" same_as "1"
+}
+
+@test 'render buffer sets rendered lines count' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo charlie
+  -cbx-popup-rows-from-candidates
+  typeset -gi _CBX_POPUP_SELECTED=1
+
+  -cbx-popup-render-buffer
+
+  assert "${_CBX_POPUP_RENDERED_LINES}" same_as "5"
+}
+
+@test 'render buffer is non-empty for valid rows' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo
+  -cbx-popup-rows-from-candidates
+  typeset -gi _CBX_POPUP_SELECTED=1
+
+  -cbx-popup-render-buffer
+
+  assert "${REPLY}" is_not_empty
+}
+
+@test 'render buffer is empty when no rows exist' {
+  typeset -ga _CBX_POPUP_ROWS=()
+
+  -cbx-popup-render-buffer
+
+  assert "${REPLY}" same_as ""
+}
+
+@test 'erase buffer clears the correct number of lines' {
+  typeset -gi _CBX_POPUP_RENDERED_LINES=4
+
+  -cbx-popup-erase-buffer
+
+  # Buffer should contain 4 clear-line sequences.
+  local count="${#REPLY//[^K]/}"
+  assert "${count}" same_as "4"
+}
+
+@test 'keymap create makes _cbx_menu keymap available' {
+  -cbx-popup-keymap-create
+
+  local exists=0
+  bindkey -l | grep -q '_cbx_menu' && exists=1
+
+  -cbx-popup-keymap-destroy
+
+  assert "${exists}" same_as "1"
+}
+
+@test 'keymap destroy removes _cbx_menu keymap' {
+  -cbx-popup-keymap-create
+  -cbx-popup-keymap-destroy
+
+  local exists=0
+  bindkey -l | grep -q '_cbx_menu' && exists=1
+
+  assert "${exists}" same_as "0"
+}
+
+@test 'keymap binds Down arrow to next widget' {
+  -cbx-popup-keymap-create
+
+  local binding
+  binding="$(bindkey -M _cbx_menu $'\e[B')"
+
+  -cbx-popup-keymap-destroy
+
+  assert "${binding}" same_as "\"^[[B\" -cbx-popup-next-widget"
+}
+
+@test 'keymap binds Enter to accept widget' {
+  -cbx-popup-keymap-create
+
+  local binding
+  binding="$(bindkey -M _cbx_menu '^M')"
+
+  -cbx-popup-keymap-destroy
+
+  assert "${binding}" same_as "\"^M\" -cbx-popup-accept-widget"
+}
+
+@test 'keymap binds Escape to cancel widget' {
+  -cbx-popup-keymap-create
+
+  local binding
+  binding="$(bindkey -M _cbx_menu '^[')"
+
+  -cbx-popup-keymap-destroy
+
+  assert "${binding}" same_as "\"^[\" -cbx-popup-cancel-widget"
+}
+
+@test 'accept handoff extracts correct id from selected row' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo charlie
+  -cbx-popup-rows-from-candidates
+  typeset -gi _CBX_POPUP_SELECTED=2
+
+  local tab=$'\t'
+  local selected_row="${_CBX_POPUP_ROWS[${_CBX_POPUP_SELECTED}]}"
+  typeset -g _CBX_APPLY_ID="${selected_row%%${tab}*}"
+  typeset -g _CBX_POPUP_ACTION="accept"
+
+  assert "${_CBX_APPLY_ID}" same_as "2"
+  assert "${_CBX_POPUP_ACTION}" same_as "accept"
+}
+
+@test 'compbox.plugin.zsh bootstraps with phase 04 functions available' {
+  local output
+  output="$(
+    zsh -f -c '
+      source "$1/compbox.plugin.zsh"
+      print -r -- "has-render=${+functions[-cbx-popup-render]}"
+      print -r -- "has-render-buffer=${+functions[-cbx-popup-render-buffer]}"
+      print -r -- "has-next=${+functions[-cbx-popup-next]}"
+      print -r -- "has-prev=${+functions[-cbx-popup-prev]}"
+      print -r -- "has-keymap-create=${+functions[-cbx-popup-keymap-create]}"
+      print -r -- "has-rows=${+functions[-cbx-popup-rows-from-candidates]}"
+    ' _ "${CBX_PROJECT_ROOT}"
+  )"
+
+  local -a lines
+  lines=("${(@f)output}")
+
+  assert "${lines[1]}" same_as "has-render=1"
+  assert "${lines[2]}" same_as "has-render-buffer=1"
+  assert "${lines[3]}" same_as "has-next=1"
+  assert "${lines[4]}" same_as "has-prev=1"
+  assert "${lines[5]}" same_as "has-keymap-create=1"
+  assert "${lines[6]}" same_as "has-rows=1"
+}
+
+@test 'disable cleans up popup state globals' {
+  cbx-enable
+
+  # Simulate popup state.
+  typeset -ga _CBX_POPUP_ROWS=("1${$'\t'}test")
+  typeset -gi _CBX_POPUP_SELECTED=1
+  typeset -g _CBX_POPUP_ACTION="accept"
+  typeset -gi _CBX_POPUP_RENDERED_LINES=3
+
+  cbx-disable
+
+  assert "(( ${+_CBX_POPUP_ROWS} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_POPUP_SELECTED} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_POPUP_ACTION} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_POPUP_RENDERED_LINES} ))" same_as "(( 0 ))"
+}
