@@ -39,6 +39,24 @@ function -cbx-apply-resolve() {
   done
   fields+=("${rest}")
 
+  # Validate field count: packed records must have exactly 9 fields.
+  if ((${#fields[@]} != 9)); then
+    return 1
+  fi
+
+  # Unescape the fields that apply-resolve uses.
+  # Skip display (3), group (4), and integer fields (1, 9).
+  -cbx-candidate-unescape-field "${fields[2]}"
+  fields[2]="${REPLY}"
+  -cbx-candidate-unescape-field "${fields[5]}"
+  fields[5]="${REPLY}"
+  -cbx-candidate-unescape-field "${fields[6]}"
+  fields[6]="${REPLY}"
+  -cbx-candidate-unescape-field "${fields[7]}"
+  fields[7]="${REPLY}"
+  -cbx-candidate-unescape-field "${fields[8]}"
+  fields[8]="${REPLY}"
+
   # Set scalar return to the selected word.
   REPLY="${fields[2]}"
 

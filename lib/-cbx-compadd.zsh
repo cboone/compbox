@@ -147,18 +147,35 @@ function -cbx-capture-from-compadd() {
   local cur_iprefix="${IPREFIX:-}"
   local cur_isuffix="${ISUFFIX:-}"
 
+  # Escape loop-invariant fields once before the word loop.
+  local esc_group esc_prefix esc_suffix esc_iprefix esc_isuffix
+  -cbx-candidate-escape-field "${group}"
+  esc_group="${REPLY}"
+  -cbx-candidate-escape-field "${cur_prefix}"
+  esc_prefix="${REPLY}"
+  -cbx-candidate-escape-field "${cur_suffix}"
+  esc_suffix="${REPLY}"
+  -cbx-candidate-escape-field "${cur_iprefix}"
+  esc_iprefix="${REPLY}"
+  -cbx-candidate-escape-field "${cur_isuffix}"
+  esc_isuffix="${REPLY}"
+
   # Pack each word as a candidate record.
   # Increment ID in this scope (not inside $() subshell) so it persists.
   typeset -ga _CBX_CANDIDATES
   typeset -gi _CBX_CAND_NEXT_ID
   local idx=0
-  local w disp
+  local w disp esc_w esc_disp
   local tab=$'\t'
   for w in "${words[@]}"; do
     ((idx++))
     ((_CBX_CAND_NEXT_ID++))
     disp="${displays[${idx}]:-${w}}"
-    _CBX_CANDIDATES+=("${_CBX_CAND_NEXT_ID}${tab}${w}${tab}${disp}${tab}${group}${tab}${cur_prefix}${tab}${cur_suffix}${tab}${cur_iprefix}${tab}${cur_isuffix}${tab}${call_idx}")
+    -cbx-candidate-escape-field "${w}"
+    esc_w="${REPLY}"
+    -cbx-candidate-escape-field "${disp}"
+    esc_disp="${REPLY}"
+    _CBX_CANDIDATES+=("${_CBX_CAND_NEXT_ID}${tab}${esc_w}${tab}${esc_disp}${tab}${esc_group}${tab}${esc_prefix}${tab}${esc_suffix}${tab}${esc_iprefix}${tab}${esc_isuffix}${tab}${call_idx}")
   done
 
   cbx_bench_mark "capture-packed"

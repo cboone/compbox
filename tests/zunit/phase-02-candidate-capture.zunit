@@ -193,6 +193,62 @@
   assert "$(echo "${unpacked}" | grep '^id=')" same_as "id=3"
 }
 
+@test 'tab in word round-trips through pack and unpack' {
+  -cbx-candidate-reset
+
+  local word=$'before\tafter'
+  local packed
+  packed="$(-cbx-candidate-pack 1 "${word}" "disp" "" "" "" "" "" 1)"
+
+  local unpacked
+  unpacked="$(-cbx-candidate-unpack "${packed}")"
+
+  local -a lines
+  lines=("${(@f)unpacked}")
+
+  assert "${lines[2]}" same_as "word=before	after"
+}
+
+@test 'newline in display round-trips through pack and unpack' {
+  -cbx-candidate-reset
+
+  local display=$'line1\nline2'
+  local packed
+  packed="$(-cbx-candidate-pack 1 "myword" "${display}" "" "" "" "" "" 1)"
+
+  local unpacked
+  unpacked="$(-cbx-candidate-unpack "${packed}")"
+
+  local -a lines
+  lines=("${(@f)unpacked}")
+
+  assert "${lines[3]}" same_as "display=line1"
+  assert "${lines[4]}" same_as "line2"
+}
+
+@test 'field-count validation returns non-zero for wrong field count' {
+  -cbx-candidate-reset
+
+  local ret=0
+  -cbx-candidate-unpack $'1\ttwo\tthree' 2>/dev/null || ret=$?
+
+  assert "${ret}" same_as "1"
+}
+
+@test 'tab in word round-trips through production capture and apply-resolve' {
+  -cbx-candidate-reset
+
+  local word=$'before\tafter'
+  -cbx-capture-from-compadd -- "${word}"
+
+  assert "${#_CBX_CANDIDATES[@]}" same_as "1"
+
+  _CBX_APPLY_ID=1
+  -cbx-apply-resolve 1
+
+  assert "${REPLY}" same_as $'before\tafter'
+}
+
 @test 'compbox.plugin.zsh bootstraps with phase 02 functions available' {
   local output
   output="$(
