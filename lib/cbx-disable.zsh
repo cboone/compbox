@@ -33,10 +33,11 @@ function cbx-disable() {
   fi
 
   # Defensive popup cleanup: destroy keymap and erase if still active.
+  # Guard with || true so failures don't trigger ERR_EXIT mid-cleanup.
   if ((${_CBX_POPUP_ACTIVE:-0})); then
-    -cbx-popup-keymap-destroy 2>/dev/null
-    -cbx-popup-erase 2>/dev/null
-    print -n $'\e[?25h' >/dev/tty 2>/dev/null
+    -cbx-popup-keymap-destroy 2>/dev/null || true
+    -cbx-popup-erase 2>/dev/null || true
+    print -n $'\e[?25h' >/dev/tty 2>/dev/null || true
   fi
 
   # Clean up state.
