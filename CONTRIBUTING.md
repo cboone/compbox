@@ -74,8 +74,9 @@ state is not created.
 
 ### Benchmark Artifacts
 
-- `make bench-baseline` writes `benchmarks/baseline.json` for local comparison.
-- Benchmark JSON files under `benchmarks/` are intentionally gitignored.
+- `make bench-baseline` writes `benchmarks/baseline.json`, which is committed for
+  comparison.
+- Ad-hoc benchmark JSON files under `benchmarks/` are gitignored.
 - CI smoke benchmarks upload a `bench-smoke-json` artifact for each run.
 
 ### Available Make Targets
@@ -92,6 +93,8 @@ state is not created.
 | `make bench-baseline` | Capture benchmark baseline                   |
 | `make lint`           | Run all linters                              |
 | `make format`         | Format Markdown, JSON, and YAML files        |
+| `make format-check`   | Check formatting with Prettier               |
+| `make spell`          | Run spell check with cspell                  |
 | `make help`           | Show all available targets                   |
 
 ## Code Style
@@ -135,7 +138,7 @@ chore: update linter to latest version
 1. Fork the repository
 1. Create a feature branch
 1. Make your changes
-1. Ensure linting passes: `make lint`
+1. Ensure checks and tests pass: `make verify`
 1. Submit a pull request
 
 ### Branch Naming

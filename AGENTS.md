@@ -41,13 +41,20 @@ All development and CI tools are expected to be installed. Do not add "when avai
 
 ```text
 lib/                          Plugin source files (loaded in order)
+lib/bench/                    Benchmark timing instrumentation
 scripts/                      Development scripts (check, format, bench)
+scripts/lib/                  Shared script libraries
+scripts/bench/                Benchmark runner
+scripts/bench/fixtures/       Benchmark fixture scripts
 tests/helpers/setup.zsh       Scrut test bootstrap
 tests/scrut/*.md              Scrut CLI snapshot tests
 tests/zunit/helpers/          Zunit test bootstrap
 tests/zunit/*.zunit           Zunit lifecycle tests
-benchmarks/                   Benchmark output (gitignored JSON)
-docs/plans/                   Implementation plans
+tests/fixtures/               Test fixture plugins
+benchmarks/                   Benchmark output (baseline committed, ad-hoc gitignored)
+docs/plans/                   Implementation plans (active)
+docs/plans/done/              Completed plans
+docs/reviews/                 Branch reviews
 ```
 
 ## Make Targets
