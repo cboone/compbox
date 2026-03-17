@@ -31,7 +31,7 @@ The zunit bootstrap at `tests/zunit/helpers/bootstrap.zsh` must use `typeset -gr
 
 ### ShellCheck
 
-ShellCheck does not support `--shell=zsh`. Use `--shell=bash` with SC code exclusions for zsh false positives. See `SHELLCHECK_EXCLUDE` in `scripts/check-zsh.zsh` for the current exclusion list.
+ShellCheck does not support `--shell=zsh`. Use `--shell=bash` with SC code exclusions for zsh false positives. See `SHELLCHECK_EXCLUDE` in `scripts/check-zsh.zsh` for the current exclusion list. The canonical codes come from the `check-zsh-scripts` skill; project-specific codes are documented inline.
 
 ### Tool Availability
 
