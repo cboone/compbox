@@ -264,9 +264,9 @@ $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   packed="$(-cbx-candidate-pack 1 "myword" "${display}" "" "" "" "" "" 1)" &&
 >   local unpacked &&
 >   unpacked="$(-cbx-candidate-unpack "${packed}")" &&
->   local got="$(echo "${unpacked}" | grep '^display=' | cut -d= -f2-)" &&
->   if [[ "${got}" == "line1" ]]; then echo "match"; else echo "mismatch: $(echo -n "${got}" | od -An -tx1)"; fi
-match
+>   echo "${unpacked}" | grep -A1 '^display='
+display=line1
+line2
 ```
 
 ## Field-count validation rejects corrupted records
