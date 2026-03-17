@@ -5,6 +5,9 @@
 # -cbx-popup-render-buffer builds the ANSI string in REPLY.
 # -cbx-popup-render writes the buffer to /dev/tty.
 # -cbx-popup-erase-buffer and -cbx-popup-erase handle clearing.
+#
+# When _CBX_POPUP_ROW and _CBX_POPUP_COL are set, uses absolute CUP
+# positioning. Otherwise falls back to relative cursor movement.
 
 function -cbx-popup-render-buffer() {
   emulate -L zsh
@@ -41,11 +44,24 @@ function -cbx-popup-render-buffer() {
   local esc=$'\e'
   local buf=""
 
+  # Check for absolute positioning mode.
+  local -i use_cup=0
+  local -i popup_row="${_CBX_POPUP_ROW:-0}"
+  local -i popup_col="${_CBX_POPUP_COL:-0}"
+  if ((popup_row > 0 && popup_col > 0)); then
+    use_cup=1
+  fi
+
   # Save cursor and hide it.
   buf+="${esc}7${esc}[?25l"
 
-  # Move to next line.
-  buf+=$'\n\r'
+  local -i current_row="${popup_row}"
+
+  if ((use_cup)); then
+    buf+="${esc}[${current_row};${popup_col}H"
+  else
+    buf+=$'\n\r'
+  fi
 
   # Top border.
   buf+="┌${hfill}┐"
@@ -55,7 +71,13 @@ function -cbx-popup-render-buffer() {
   local padded
   for disp in "${displays[@]}"; do
     ((idx++))
-    buf+=$'\n\r'
+    ((current_row++))
+
+    if ((use_cup)); then
+      buf+="${esc}[${current_row};${popup_col}H"
+    else
+      buf+=$'\n\r'
+    fi
 
     # Right-pad display to max_width.
     padded="${(r:${max_width}:: :)disp}"
@@ -68,7 +90,12 @@ function -cbx-popup-render-buffer() {
   done
 
   # Bottom border.
-  buf+=$'\n\r'
+  ((current_row++))
+  if ((use_cup)); then
+    buf+="${esc}[${current_row};${popup_col}H"
+  else
+    buf+=$'\n\r'
+  fi
   buf+="└${hfill}┘"
 
   # Restore cursor and show it.
@@ -101,10 +128,22 @@ function -cbx-popup-erase-buffer() {
   local esc=$'\e'
   local buf="${esc}7"
 
+  # Check for absolute positioning mode.
+  local -i use_cup=0
+  local -i popup_row="${_CBX_POPUP_ROW:-0}"
+  if ((popup_row > 0)); then
+    use_cup=1
+  fi
+
   local i
   for ((i = 0; i < lines; i++)); do
-    buf+=$'\n\r'
-    buf+="${esc}[2K"
+    if ((use_cup)); then
+      local -i row=$((popup_row + i))
+      buf+="${esc}[${row};1H${esc}[2K"
+    else
+      buf+=$'\n\r'
+      buf+="${esc}[2K"
+    fi
   done
 
   buf+="${esc}8${esc}[?25h"

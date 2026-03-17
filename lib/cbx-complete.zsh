@@ -3,6 +3,9 @@
 # Completion widget with popup interaction loop.
 # Delegates to the stock completion widget, then opens a popup for
 # multi-match results with cyclical navigation and accept/cancel.
+#
+# Phase 05 additions: DSR cursor probing, above/below placement,
+# right-edge clamping, and tmux screen save/restore.
 
 function cbx-complete() {
   emulate -L zsh
@@ -43,6 +46,20 @@ function cbx-complete() {
     typeset -gi _CBX_POPUP_SELECTED=1
     typeset -g _CBX_POPUP_ACTION=""
 
+    # Probe cursor position and compute placement.
+    # If any positioning precondition fails, skip popup for this
+    # invocation and return without showing anything.
+    if ! -cbx-dsr-probe \
+      || ! -cbx-pane-geometry \
+      || ! -cbx-popup-dimensions \
+      || ! -cbx-popup-placement; then
+      typeset -gi _CBX_POPUP_ACTIVE=0
+      return
+    fi
+
+    # Save screen behind popup (tmux only, non-fatal).
+    -cbx-screen-save 2>/dev/null || true
+
     -cbx-popup-render
 
     local saved_keymap="${KEYMAP}"
@@ -62,6 +79,9 @@ function cbx-complete() {
       KEYTIMEOUT="${saved_keytimeout}"
       zle -K "${saved_keymap}"
       -cbx-popup-erase
+      if ! -cbx-screen-restore 2>/dev/null; then
+        zle reset-prompt 2>/dev/null || true
+      fi
       -cbx-popup-keymap-destroy
       if [[ -w /dev/tty ]]; then
         print -n $'\e[?25h' >/dev/tty
