@@ -80,6 +80,9 @@ function -cbx-popup-render-buffer() {
 }
 
 function -cbx-popup-render() {
+  emulate -L zsh
+  setopt NO_UNSET PIPE_FAIL
+
   -cbx-popup-render-buffer
   print -n "${REPLY}" >/dev/tty
 }
@@ -109,6 +112,9 @@ function -cbx-popup-erase-buffer() {
 }
 
 function -cbx-popup-erase() {
+  emulate -L zsh
+  setopt NO_UNSET PIPE_FAIL
+
   -cbx-popup-erase-buffer
   print -n "${REPLY}" >/dev/tty
   unset _CBX_POPUP_RENDERED_LINES
