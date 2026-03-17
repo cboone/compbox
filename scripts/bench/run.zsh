@@ -184,10 +184,10 @@ function print_delta() {
   # Print budget verdict when thresholds are provided.
   if ((budget_p50 > 0 || budget_p95 > 0)); then
     local over_budget=0
-    if (($(echo "${abs_p50} > ${budget_p50}" | bc -l))); then
+    if (($(echo "${delta_p50} > ${budget_p50}" | bc -l))); then
       over_budget=1
     fi
-    if (($(echo "${abs_p95} > ${budget_p95}" | bc -l))); then
+    if (($(echo "${delta_p95} > ${budget_p95}" | bc -l))); then
       over_budget=1
     fi
     if ((over_budget)); then
