@@ -69,4 +69,5 @@ docs/reviews/                 Branch reviews
 | `make verify`       | Run checks and tests          |
 | `make bench`        | Run benchmarks                |
 | `make lint`         | Run all linters               |
+| `make lint-md-fix`  | Lint and auto-fix Markdown    |
 | `make spell`        | Run spell check               |

@@ -29,9 +29,6 @@ jobs:
     with:
       run-cspell: true
 
-  github-lint:
-    uses: cboone/gh-actions/.github/workflows/github-lint.yml@v1
-
   check-zsh:
     name: Check zsh
     runs-on: ubuntu-latest

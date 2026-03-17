@@ -1,6 +1,6 @@
 {
   "config": {
-    // Line length: disabled (Prettier handles wrapping)
+    // Line length: disabled (managed manually)
     "MD013": false,
 
     // Allow duplicate headings in different sections
@@ -12,10 +12,10 @@
     // Allow bare URLs without angle brackets
     "MD034": false,
 
-    // Allow files without top-level heading (frontmatter files, PR template)
-    "MD041": false,
+    // Allow files without top-level heading (Copilot instructions, PR template, reviews)
+    "MD041": false
   },
 
   // Files to ignore
-  "ignores": ["CHANGELOG.md", "tests/**"],
+  "ignores": ["CHANGELOG.md", "tests/**"]
 }

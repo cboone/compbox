@@ -1,0 +1,12 @@
+# This is a zsh project. ShellCheck does not natively support zsh.
+# The scripts/check-zsh.zsh script handles --shell=bash and --exclude
+# flags per-invocation with a comprehensive zsh false-positive exclusion
+# list. This file configures only global settings.
+
+# Follow source directives for cross-file analysis
+external-sources=true
+
+# Optional checks (subset safe for zsh)
+enable=check-extra-masked-returns
+enable=deprecate-which
+enable=useless-use-of-cat

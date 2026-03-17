@@ -1,9 +1,12 @@
-.PHONY: lint lint-md spell test test-scrut test-scrut-update test-zunit check-zsh format-zsh verify bench bench-baseline help
+.PHONY: lint lint-md lint-md-fix spell test test-scrut test-scrut-update test-zunit check-zsh format-zsh verify bench bench-baseline help
 
-lint: lint-md spell ## Run all linters
+lint: lint-md check-zsh spell ## Run all linters
 
 lint-md: ## Lint Markdown files
 	npx markdownlint-cli2@0.21.0 "**/*.md"
+
+lint-md-fix: ## Lint and auto-fix Markdown files
+	npx markdownlint-cli2@0.21.0 --fix "**/*.md"
 
 test: test-scrut test-zunit ## Run all tests
 
