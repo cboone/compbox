@@ -269,6 +269,21 @@ display=line1
 line2
 ```
 
+## SOH in word field round-trips through pack and unpack
+
+```scrut
+$ source "${TESTDIR}/../helpers/setup.zsh" &&
+>   cbx_test_setup &&
+>   local word=$'before\x01after' &&
+>   local packed &&
+>   packed="$(-cbx-candidate-pack 1 "${word}" "disp" "" "" "" "" "" 1)" &&
+>   local unpacked &&
+>   unpacked="$(-cbx-candidate-unpack "${packed}")" &&
+>   local got="$(echo "${unpacked}" | grep '^word=' | cut -d= -f2-)" &&
+>   if [[ "${got}" == "${word}" ]]; then echo "match"; else echo "mismatch: $(echo -n "${got}" | od -An -tx1)"; fi
+match
+```
+
 ## Field-count validation rejects corrupted records
 
 ```scrut

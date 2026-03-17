@@ -249,6 +249,54 @@
   assert "${REPLY}" same_as $'before\tafter'
 }
 
+@test 'SOH in word round-trips through pack and unpack' {
+  -cbx-candidate-reset
+
+  local word=$'before\x01after'
+  local packed
+  packed="$(-cbx-candidate-pack 1 "${word}" "disp" "" "" "" "" "" 1)"
+
+  local unpacked
+  unpacked="$(-cbx-candidate-unpack "${packed}")"
+
+  local -a lines
+  lines=("${(@f)unpacked}")
+
+  local got="${lines[2]#word=}"
+  assert "${got}" same_as $'before\x01after'
+}
+
+@test 'SOH with backslash round-trips through pack and unpack' {
+  -cbx-candidate-reset
+
+  local word=$'a\x01b\\c'
+  local packed
+  packed="$(-cbx-candidate-pack 1 "${word}" "disp" "" "" "" "" "" 1)"
+
+  local unpacked
+  unpacked="$(-cbx-candidate-unpack "${packed}")"
+
+  local -a lines
+  lines=("${(@f)unpacked}")
+
+  local got="${lines[2]#word=}"
+  assert "${got}" same_as $'a\x01b\\c'
+}
+
+@test 'SOH in word round-trips through production capture and apply-resolve' {
+  -cbx-candidate-reset
+
+  local word=$'before\x01after'
+  -cbx-capture-from-compadd -- "${word}"
+
+  assert "${#_CBX_CANDIDATES[@]}" same_as "1"
+
+  _CBX_APPLY_ID=1
+  -cbx-apply-resolve 1
+
+  assert "${REPLY}" same_as $'before\x01after'
+}
+
 @test 'compbox.plugin.zsh bootstraps with phase 02 functions available' {
   local output
   output="$(

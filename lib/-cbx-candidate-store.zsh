@@ -6,28 +6,42 @@ function -cbx-candidate-escape-field() {
   emulate -L zsh
   setopt NO_UNSET PIPE_FAIL
 
-  # Escape backslash, tab, and newline for safe tab-delimited packing.
+  # Escape backslash, tab, newline, and SOH for safe tab-delimited packing.
   # Order matters: backslash first to avoid double-escaping.
   # Returns result via REPLY (no subshell).
   REPLY="${1//\\/\\\\}"
   REPLY="${REPLY//$'\t'/\\t}"
   REPLY="${REPLY//$'\n'/\\n}"
+  REPLY="${REPLY//$'\x01'/\\1}"
 }
 
 function -cbx-candidate-unescape-field() {
   emulate -L zsh
   setopt NO_UNSET PIPE_FAIL
 
-  # Unescape using SOH placeholder to avoid ordering ambiguity.
-  # Without the placeholder, \\t (escaped backslash + literal t) would be
-  # mis-parsed as backslash + tab.
-  local soh=$'\x01'
-  local tab=$'\t'
-  local lf=$'\n'
-  REPLY="${1//\\\\/${soh}}"
-  REPLY="${REPLY//\\t/${tab}}"
-  REPLY="${REPLY//\\n/${lf}}"
-  REPLY="${REPLY//${soh}/\\}"
+  # Single-pass character-by-character unescape.
+  # Handles \\, \t, \n, and \1 (SOH) without needing a placeholder byte.
+  local input="${1}"
+  local output=""
+  local len="${#input}"
+  local i
+
+  for ((i = 1; i <= len; i++)); do
+    if [[ "${input[i]}" == '\' ]] && ((i < len)); then
+      case "${input[i+1]}" in
+      '\') output+='\' ;;
+      't') output+=$'\t' ;;
+      'n') output+=$'\n' ;;
+      '1') output+=$'\x01' ;;
+      *) output+="\\${input[i+1]}" ;;
+      esac
+      ((i++))
+    else
+      output+="${input[i]}"
+    fi
+  done
+
+  REPLY="${output}"
 }
 
 function -cbx-candidate-reset() {
