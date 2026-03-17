@@ -72,6 +72,42 @@ function require_fixtures() {
   done
 }
 
+function collect_metadata() {
+  local hostname cpu timestamp zsh_ver
+
+  hostname="$(uname -n)"
+  timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  zsh_ver="${ZSH_VERSION}"
+
+  # CPU model detection: macOS vs Linux.
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    cpu="$(sysctl -n machdep.cpu.brand_string)"
+  elif [[ -f /proc/cpuinfo ]]; then
+    cpu="$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs)"
+  else
+    cpu="unknown"
+  fi
+
+  jq -n \
+    --arg hostname "${hostname}" \
+    --arg cpu "${cpu}" \
+    --arg timestamp "${timestamp}" \
+    --arg zsh_version "${zsh_ver}" \
+    '{hostname: $hostname, cpu: $cpu, timestamp: $timestamp, zsh_version: $zsh_version}'
+}
+
+function inject_metadata() {
+  local json_file="${1}"
+  local metadata
+
+  metadata="$(collect_metadata)"
+
+  local tmp_file
+  tmp_file="$(mktemp)"
+  jq --argjson metadata "${metadata}" '{metadata: $metadata} + .' "${json_file}" >"${tmp_file}"
+  mv "${tmp_file}" "${json_file}"
+}
+
 function configure_scenarios() {
   local mode="${1}"
 
@@ -233,6 +269,8 @@ function run_benchmarks() {
   done
 
   hyperfine "${hyperfine_args[@]}"
+
+  inject_metadata "${json_out}"
 
   print ""
   print "${C_BOLD}Results${C_RESET}"
