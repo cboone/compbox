@@ -69,6 +69,4 @@ docs/reviews/                 Branch reviews
 | `make verify`       | Run checks and tests          |
 | `make bench`        | Run benchmarks                |
 | `make lint`         | Run all linters               |
-| `make format`       | Format Markdown, JSON, YAML   |
-| `make format-check` | Check formatting              |
 | `make spell`        | Run spell check               |

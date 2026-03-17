@@ -1,15 +1,9 @@
-.PHONY: lint lint-md format format-check spell test test-scrut test-scrut-update test-zunit check-zsh format-zsh verify bench bench-baseline help
+.PHONY: lint lint-md spell test test-scrut test-scrut-update test-zunit check-zsh format-zsh verify bench bench-baseline help
 
 lint: lint-md spell ## Run all linters
 
 lint-md: ## Lint Markdown files
 	npx markdownlint-cli2@0.21.0 "**/*.md"
-
-format: ## Format files with Prettier
-	npx prettier@3.8.1 --write .
-
-format-check: ## Check formatting with Prettier
-	npx prettier@3.8.1 --check .
 
 test: test-scrut test-zunit ## Run all tests
 
