@@ -1,4 +1,10 @@
 {
+  "metadata": {
+    "hostname": "tehipite",
+    "cpu": "Apple M4 Max",
+    "timestamp": "2026-03-16T23:09:22Z",
+    "zsh_version": "5.9"
+  },
   "results": [
     {
       "command": "stock-compinit",
