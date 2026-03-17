@@ -204,6 +204,117 @@
   assert "${binding}" same_as "\"^[\" -cbx-popup-cancel-widget"
 }
 
+@test 'cbx-complete accept path invokes apply and tears down popup loop' {
+  function -cbx-complete-should-popup() {
+    return 0
+  }
+
+  function -cbx-popup-rows-from-candidates() {
+    local tab=$'\t'
+    typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
+  }
+
+  local -a zle_calls=()
+  function zle() {
+    zle_calls+=("${1}")
+    if [[ "${1}" == "recursive-edit" ]]; then
+      typeset -g _CBX_POPUP_ACTION="accept"
+    fi
+    return 0
+  }
+
+  typeset -gi saw_render=0
+  function -cbx-popup-render() { typeset -gi saw_render=1; }
+
+  typeset -gi saw_erase=0
+  function -cbx-popup-erase() { typeset -gi saw_erase=1; }
+
+  typeset -gi saw_keymap_create=0
+  function -cbx-popup-keymap-create() { typeset -gi saw_keymap_create=1; }
+
+  typeset -gi saw_keymap_destroy=0
+  function -cbx-popup-keymap-destroy() { typeset -gi saw_keymap_destroy=1; }
+
+  _CBX_ORIG_TAB_EMACS="expand-or-complete"
+  _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+  KEYMAP="main"
+  BUFFER="echo /tmp/alph"
+  CURSOR="${#BUFFER}"
+
+  cbx-complete
+
+  assert "${saw_render}" same_as "1"
+  assert "${saw_erase}" same_as "1"
+  assert "${saw_keymap_create}" same_as "1"
+  assert "${saw_keymap_destroy}" same_as "1"
+  assert "${_CBX_POPUP_ACTION}" same_as "accept"
+  assert "${_CBX_POPUP_ACTIVE}" same_as "0"
+
+  local calls_joined="${(j:|:)zle_calls}"
+  [[ "${calls_joined}" == *"recursive-edit"* ]] && local saw_recursive=1 || local saw_recursive=0
+  [[ "${calls_joined}" == *"_cbx-apply"* ]] && local saw_apply=1 || local saw_apply=0
+  assert "${saw_recursive}" same_as "1"
+  assert "${saw_apply}" same_as "1"
+}
+
+@test 'cbx-complete cancel path skips apply and still tears down popup loop' {
+  function -cbx-complete-should-popup() {
+    return 0
+  }
+
+  function -cbx-popup-rows-from-candidates() {
+    local tab=$'\t'
+    typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
+  }
+
+  local original_buffer="echo /tmp/alph"
+  local original_cursor="${#original_buffer}"
+
+  local -a zle_calls=()
+  function zle() {
+    zle_calls+=("${1}")
+    case "${1}" in
+    expand-or-complete)
+      BUFFER="mutated-by-stock"
+      CURSOR="${#BUFFER}"
+      ;;
+    recursive-edit)
+      typeset -g _CBX_POPUP_ACTION="cancel"
+      ;;
+    esac
+    return 0
+  }
+
+  typeset -gi saw_erase=0
+  function -cbx-popup-erase() { typeset -gi saw_erase=1; }
+
+  function -cbx-popup-render() { :; }
+
+  typeset -gi saw_keymap_destroy=0
+  function -cbx-popup-keymap-destroy() { typeset -gi saw_keymap_destroy=1; }
+
+  _CBX_ORIG_TAB_EMACS="expand-or-complete"
+  _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+  KEYMAP="main"
+  BUFFER="${original_buffer}"
+  CURSOR="${original_cursor}"
+
+  cbx-complete
+
+  assert "${_CBX_POPUP_ACTION}" same_as "cancel"
+  assert "${_CBX_POPUP_ACTIVE}" same_as "0"
+  assert "${BUFFER}" same_as "${original_buffer}"
+  assert "${CURSOR}" same_as "${original_cursor}"
+  assert "${saw_erase}" same_as "1"
+  assert "${saw_keymap_destroy}" same_as "1"
+
+  local calls_joined="${(j:|:)zle_calls}"
+  [[ "${calls_joined}" == *"recursive-edit"* ]] && local saw_recursive=1 || local saw_recursive=0
+  [[ "${calls_joined}" == *"_cbx-apply"* ]] && local saw_apply=1 || local saw_apply=0
+  assert "${saw_recursive}" same_as "1"
+  assert "${saw_apply}" same_as "0"
+}
+
 @test 'accept handoff extracts correct id from selected row' {
   -cbx-candidate-reset
   -cbx-capture-from-compadd -- alpha bravo charlie
