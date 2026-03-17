@@ -43,8 +43,12 @@ function cbx-complete() {
     -cbx-popup-render
 
     local saved_keymap="${KEYMAP}"
+    local saved_keytimeout="${KEYTIMEOUT}"
     -cbx-popup-keymap-create
     zle -K _cbx_menu
+    # The popup keymap is self-contained (no user multi-key sequences),
+    # so a short timeout is safe and makes Escape feel instant.
+    KEYTIMEOUT=1
 
     {
       zle recursive-edit
@@ -52,6 +56,7 @@ function cbx-complete() {
       # Suppress the send-break exception so execution continues to the
       # accept/cancel check below.
       TRY_BLOCK_ERROR=0
+      KEYTIMEOUT="${saved_keytimeout}"
       zle -K "${saved_keymap}"
       -cbx-popup-erase
       -cbx-popup-keymap-destroy
