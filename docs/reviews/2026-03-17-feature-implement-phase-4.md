@@ -79,6 +79,7 @@ Files: `docs/plans/done/2026-03-11-phase-04-popup-mvp-interaction.md`, `docs/pla
 ### File Inventory
 
 **New files (12):**
+
 - `lib/navigate.zsh`
 - `lib/render.zsh`
 - `lib/keymap.zsh`
@@ -92,6 +93,7 @@ Files: `docs/plans/done/2026-03-11-phase-04-popup-mvp-interaction.md`, `docs/pla
 - `docs/plans/done/2026-03-17-popup-benchmark-fixtures.md`
 
 **Modified files (11):**
+
 - `compbox.plugin.zsh`
 - `lib/cbx-complete.zsh`
 - `lib/-cbx-complete.zsh`
@@ -107,9 +109,11 @@ Files: `docs/plans/done/2026-03-11-phase-04-popup-mvp-interaction.md`, `docs/pla
 - `benchmarks/baseline.json`
 
 **Deleted files (1):**
+
 - `docs/plans/2026-03-11-phase-04-popup-mvp-interaction.md` (moved to done/)
 
 **Renamed files (1):**
+
 - `scripts/bench/fixtures/pass-through-tab.zsh` -> `scripts/bench/fixtures/stock-completion-multi.zsh` (copy with modifications)
 
 ### Notable Changes
@@ -169,6 +173,7 @@ Files: `docs/plans/done/2026-03-11-phase-04-popup-mvp-interaction.md`, `docs/pla
 #### Benchmark plan items (partially addressed in follow-up commits)
 
 The plan's benchmark section called for:
+
 1. Measure open-popup latency -- Done via `popup-open-accept.zsh` fixture.
 2. Measure navigation redraw latency at p95 -- Done via `popup-navigate-accept.zsh` fixture.
 3. Measure accept and cancel exit latency impact -- Done via `popup-cancel.zsh` fixture.
