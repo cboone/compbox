@@ -32,28 +32,6 @@ jobs:
   github-lint:
     uses: cboone/gh-actions/.github/workflows/github-lint.yml@v1
 
-  lint-md:
-    name: Lint Markdown
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Run markdownlint
-        run: npx markdownlint-cli2@0.21.0 "**/*.md"
-
-  format-check:
-    name: Format check
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Run Prettier check
-        run: npx prettier@3.8.1 --check .
-
   check-zsh:
     name: Check zsh
     runs-on: ubuntu-latest
