@@ -23,6 +23,16 @@ readonly BUDGET_LIFECYCLE_P95=5  # lifecycle-only vs stock-compinit p95
 readonly BUDGET_COMPLETION_P50=5 # pass-through-tab vs stock-completion p50
 readonly BUDGET_COMPLETION_P95=8 # pass-through-tab vs stock-completion p95
 
+# Popup budgets measure delta between popup fixtures and baselines.
+# Raw popup times include ~300ms expect sleep (after 200 + after 100) for
+# render wait and accept processing. Popup-to-popup deltas cancel this out.
+readonly BUDGET_POPUP_OPEN_P50=325 # popup-open-accept vs stock-completion-multi p50
+readonly BUDGET_POPUP_OPEN_P95=350 # popup-open-accept vs stock-completion-multi p95
+readonly BUDGET_POPUP_NAV_P50=5    # popup-navigate-accept vs popup-open-accept p50
+readonly BUDGET_POPUP_NAV_P95=8    # popup-navigate-accept vs popup-open-accept p95
+readonly BUDGET_POPUP_CANCEL_P50=5 # popup-cancel vs popup-open-accept p50
+readonly BUDGET_POPUP_CANCEL_P95=8 # popup-cancel vs popup-open-accept p95
+
 typeset -ga BENCH_SCENARIO_NAMES=()
 typeset -ga BENCH_SCENARIO_COMMANDS=()
 
@@ -59,8 +69,12 @@ function require_fixtures() {
     "${FIXTURES_DIR}/noop-plugin.zsh"
     "${FIXTURES_DIR}/noop-plugin-startup.zsh"
     "${FIXTURES_DIR}/pass-through-tab.zsh"
+    "${FIXTURES_DIR}/popup-cancel.zsh"
+    "${FIXTURES_DIR}/popup-navigate-accept.zsh"
+    "${FIXTURES_DIR}/popup-open-accept.zsh"
     "${FIXTURES_DIR}/stock-compinit.zsh"
     "${FIXTURES_DIR}/stock-completion.zsh"
+    "${FIXTURES_DIR}/stock-completion-multi.zsh"
   )
 
   local fixture
@@ -124,6 +138,14 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
     BENCH_SCENARIO_NAMES+=("pass-through-tab")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/pass-through-tab.zsh")
+    BENCH_SCENARIO_NAMES+=("stock-completion-multi")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion-multi.zsh")
+    BENCH_SCENARIO_NAMES+=("popup-open-accept")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-open-accept.zsh")
+    BENCH_SCENARIO_NAMES+=("popup-navigate-accept")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-navigate-accept.zsh")
+    BENCH_SCENARIO_NAMES+=("popup-cancel")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-cancel.zsh")
     ;;
   smoke)
     BENCH_SCENARIO_NAMES+=("stock-compinit")
@@ -134,6 +156,10 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
     BENCH_SCENARIO_NAMES+=("pass-through-tab")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/pass-through-tab.zsh")
+    BENCH_SCENARIO_NAMES+=("stock-completion-multi")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion-multi.zsh")
+    BENCH_SCENARIO_NAMES+=("popup-open-accept")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-open-accept.zsh")
     ;;
   full)
     BENCH_SCENARIO_NAMES+=("stock-zsh")
@@ -148,6 +174,14 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion.zsh")
     BENCH_SCENARIO_NAMES+=("pass-through-tab")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/pass-through-tab.zsh")
+    BENCH_SCENARIO_NAMES+=("stock-completion-multi")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion-multi.zsh")
+    BENCH_SCENARIO_NAMES+=("popup-open-accept")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-open-accept.zsh")
+    BENCH_SCENARIO_NAMES+=("popup-navigate-accept")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-navigate-accept.zsh")
+    BENCH_SCENARIO_NAMES+=("popup-cancel")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-cancel.zsh")
     ;;
   *)
     print "Unknown benchmark mode: ${mode}" >&2
@@ -305,6 +339,39 @@ function run_benchmarks() {
     printf "  %-38s" "pass-through-tab vs stock-completion"
     print_delta "${json_out}" "stock-completion" "pass-through-tab" \
       "${BUDGET_COMPLETION_P50}" "${BUDGET_COMPLETION_P95}"
+  fi
+
+  # Show popup overhead deltas when popup scenarios are present.
+  local popup_printed_header=0
+
+  if ((${+has_scenario[stock-completion-multi]} && ${+has_scenario[popup-open-accept]})); then
+    print ""
+    print "${C_BOLD}Popup overhead${C_RESET}"
+    popup_printed_header=1
+    printf "  %-38s" "popup-open-accept vs stock-multi"
+    print_delta "${json_out}" "stock-completion-multi" "popup-open-accept" \
+      "${BUDGET_POPUP_OPEN_P50}" "${BUDGET_POPUP_OPEN_P95}"
+  fi
+
+  if ((${+has_scenario[popup-open-accept]} && ${+has_scenario[popup-navigate-accept]})); then
+    if ((!popup_printed_header)); then
+      print ""
+      print "${C_BOLD}Popup overhead${C_RESET}"
+      popup_printed_header=1
+    fi
+    printf "  %-38s" "popup-navigate vs popup-open"
+    print_delta "${json_out}" "popup-open-accept" "popup-navigate-accept" \
+      "${BUDGET_POPUP_NAV_P50}" "${BUDGET_POPUP_NAV_P95}"
+  fi
+
+  if ((${+has_scenario[popup-open-accept]} && ${+has_scenario[popup-cancel]})); then
+    if ((!popup_printed_header)); then
+      print ""
+      print "${C_BOLD}Popup overhead${C_RESET}"
+    fi
+    printf "  %-38s" "popup-cancel vs popup-open"
+    print_delta "${json_out}" "popup-open-accept" "popup-cancel" \
+      "${BUDGET_POPUP_CANCEL_P50}" "${BUDGET_POPUP_CANCEL_P95}"
   fi
 }
 
