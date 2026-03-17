@@ -368,6 +368,7 @@ function run_benchmarks() {
     if ((!popup_printed_header)); then
       print ""
       print "${C_BOLD}Popup overhead${C_RESET}"
+      popup_printed_header=1
     fi
     printf "  %-38s" "popup-cancel vs popup-open"
     print_delta "${json_out}" "popup-open-accept" "popup-cancel" \

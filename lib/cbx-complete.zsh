@@ -63,7 +63,7 @@ function cbx-complete() {
       zle -K "${saved_keymap}"
       -cbx-popup-erase
       -cbx-popup-keymap-destroy
-      if [[ -t 1 ]]; then
+      if [[ -w /dev/tty ]]; then
         print -n $'\e[?25h' >/dev/tty
       fi
       typeset -gi _CBX_POPUP_ACTIVE=0
