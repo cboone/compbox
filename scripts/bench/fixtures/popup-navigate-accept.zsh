@@ -1,7 +1,8 @@
 #!/usr/bin/env zsh
 
-# Benchmark fixture: pass-through Tab completion overhead.
-# Measures one deterministic completion keypath routed through cbx-complete.
+# Benchmark fixture: popup navigation and accept.
+# Measures navigation redraw overhead: two Down-arrow presses plus accept.
+# Delta against popup-open-accept isolates navigation cost.
 
 emulate -L zsh
 setopt ERR_EXIT NO_UNSET PIPE_FAIL
@@ -26,10 +27,16 @@ send -- "touch \"\$tmpdir/alpha-one\" \"\$tmpdir/alpha-two\" \"\$tmpdir/beta\"\r
 send -- "print __CBX_READY__\r"
 expect "__CBX_READY__"
 
-# Trigger completion once with Tab on a single-match prefix.
-# Single-match bypasses the popup and uses stock auto-insert, keeping
-# this fixture focused on pass-through overhead without popup latency.
-send -- "echo \$tmpdir/bet\t\r"
+# Trigger popup, wait for render, navigate down twice, then accept.
+# Down arrow (\x1b[B) maps to -cbx-popup-next-widget. With 2 candidates,
+# two Downs wrap around: 1 -> 2 -> 1. No delay between arrows; zle
+# processes keystrokes sequentially within recursive-edit.
+send -- "echo \$tmpdir/alph\t"
+after 200
+send -- "\x1b\[B"
+send -- "\x1b\[B"
+send -- "\r"
+send -- "\r"
 expect "bench> "
 
 send -- "cbx-disable\r"

@@ -32,10 +32,19 @@ function cbx-disable() {
     unfunction -- -cbx-orig-compadd
   fi
 
+  # Defensive popup cleanup: destroy keymap and erase if still active.
+  # Guard with || true so failures don't trigger ERR_EXIT mid-cleanup.
+  if ((${_CBX_POPUP_ACTIVE:-0})); then
+    -cbx-popup-keymap-destroy 2>/dev/null || true
+    -cbx-popup-erase 2>/dev/null || true
+    print -n $'\e[?25h' >/dev/tty 2>/dev/null || true
+  fi
+
   # Clean up state.
   unset _CBX_ORIG_TAB_EMACS _CBX_ORIG_TAB_VIINS _CBX_ENABLED
   unset _CBX_COMPADD_HAD_FUNCTION
   unset _CBX_CAND_NEXT_ID _CBX_CANDIDATES _CBX_CAND_RAW_ARGS _CBX_IN_COMPLETE _CBX_NMATCHES 2>/dev/null
   unset _CBX_POPUP_ACTIVE _CBX_APPLY_ID 2>/dev/null
   unset _CBX_RESOLVE_PREFIX _CBX_RESOLVE_SUFFIX _CBX_RESOLVE_IPREFIX _CBX_RESOLVE_ISUFFIX 2>/dev/null
+  unset _CBX_POPUP_ROWS _CBX_POPUP_SELECTED _CBX_POPUP_ACTION _CBX_POPUP_RENDERED_LINES 2>/dev/null
 }

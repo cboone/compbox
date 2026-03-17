@@ -22,6 +22,9 @@ if [[ -z "${CBX_ZUNIT_ROOT:-}" ]]; then
     "lib/-cbx-compadd.zsh"
     "lib/-cbx-apply.zsh"
     "lib/-cbx-complete.zsh"
+    "lib/navigate.zsh"
+    "lib/render.zsh"
+    "lib/keymap.zsh"
     "lib/cbx-complete.zsh"
     "lib/cbx-enable.zsh"
     "lib/cbx-disable.zsh"
@@ -53,6 +56,10 @@ if [[ -z "${CBX_ZUNIT_ROOT:-}" ]]; then
     _CBX_RESOLVE_SUFFIX
     _CBX_RESOLVE_IPREFIX
     _CBX_RESOLVE_ISUFFIX
+    _CBX_POPUP_ROWS
+    _CBX_POPUP_SELECTED
+    _CBX_POPUP_ACTION
+    _CBX_POPUP_RENDERED_LINES
   )
 fi
 

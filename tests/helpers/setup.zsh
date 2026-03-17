@@ -18,6 +18,9 @@ readonly -a CBX_PLUGIN_SOURCES=(
   "lib/-cbx-compadd.zsh"
   "lib/-cbx-apply.zsh"
   "lib/-cbx-complete.zsh"
+  "lib/navigate.zsh"
+  "lib/render.zsh"
+  "lib/keymap.zsh"
   "lib/cbx-complete.zsh"
   "lib/cbx-enable.zsh"
   "lib/cbx-disable.zsh"
@@ -49,6 +52,10 @@ readonly -a CBX_TEST_GLOBALS_TO_RESET=(
   _CBX_RESOLVE_SUFFIX
   _CBX_RESOLVE_IPREFIX
   _CBX_RESOLVE_ISUFFIX
+  _CBX_POPUP_ROWS
+  _CBX_POPUP_SELECTED
+  _CBX_POPUP_ACTION
+  _CBX_POPUP_RENDERED_LINES
 )
 
 function cbx_test_setup() {

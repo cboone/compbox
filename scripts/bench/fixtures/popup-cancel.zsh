@@ -1,7 +1,8 @@
 #!/usr/bin/env zsh
 
-# Benchmark fixture: pass-through Tab completion overhead.
-# Measures one deterministic completion keypath routed through cbx-complete.
+# Benchmark fixture: popup cancel exit.
+# Measures cancel exit latency. Delta against popup-open-accept isolates
+# the cancel-vs-accept path difference.
 
 emulate -L zsh
 setopt ERR_EXIT NO_UNSET PIPE_FAIL
@@ -26,10 +27,14 @@ send -- "touch \"\$tmpdir/alpha-one\" \"\$tmpdir/alpha-two\" \"\$tmpdir/beta\"\r
 send -- "print __CBX_READY__\r"
 expect "__CBX_READY__"
 
-# Trigger completion once with Tab on a single-match prefix.
-# Single-match bypasses the popup and uses stock auto-insert, keeping
-# this fixture focused on pass-through overhead without popup latency.
-send -- "echo \$tmpdir/bet\t\r"
+# Trigger popup, wait for render, cancel with Ctrl-G.
+# Uses Ctrl-G (\x07) instead of Escape to avoid KEYTIMEOUT delay (~400ms).
+# After cancel, BUFFER is restored to pre-completion state.
+# Ctrl-U clears the line immediately, Enter gets a clean prompt.
+send -- "echo \$tmpdir/alph\t"
+after 200
+send -- "\x07"
+send -- "\x15\r"
 expect "bench> "
 
 send -- "cbx-disable\r"

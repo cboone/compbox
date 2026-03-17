@@ -7,7 +7,7 @@ Verify the test harness bootstraps correctly and helper functions work.
 ```scrut
 $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   echo "sources: ${#CBX_PLUGIN_SOURCES[@]}"
-sources: 11
+sources: 14
 ```
 
 ```scrut

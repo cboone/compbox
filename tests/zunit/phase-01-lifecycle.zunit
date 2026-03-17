@@ -71,6 +71,8 @@
     _CBX_ORIG_TAB_EMACS="expand-or-complete"
     _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
     KEYMAP="viins"
+    BUFFER=""
+    CURSOR=0
     cbx-complete
   )"
   assert "${vi_called}" same_as "vi-expand-or-complete"
@@ -81,6 +83,8 @@
     _CBX_ORIG_TAB_EMACS="expand-or-complete"
     _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
     KEYMAP="main"
+    BUFFER=""
+    CURSOR=0
     cbx-complete
   )"
   assert "${emacs_called}" same_as "expand-or-complete"
