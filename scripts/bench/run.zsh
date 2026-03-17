@@ -24,10 +24,10 @@ readonly BUDGET_COMPLETION_P50=5 # pass-through-tab vs stock-completion p50
 readonly BUDGET_COMPLETION_P95=8 # pass-through-tab vs stock-completion p95
 
 # Popup budgets measure delta between popup fixtures and baselines.
-# Raw popup times include ~300ms expect sleep (after 200 + after 100) for
-# render wait and accept processing. Popup-to-popup deltas cancel this out.
-readonly BUDGET_POPUP_OPEN_P50=325 # popup-open-accept vs stock-completion-multi p50
-readonly BUDGET_POPUP_OPEN_P95=350 # popup-open-accept vs stock-completion-multi p95
+# Raw popup times include ~200ms expect sleep (after 200) for render wait.
+# Popup-to-popup deltas cancel this out.
+readonly BUDGET_POPUP_OPEN_P50=225 # popup-open-accept vs stock-completion-multi p50
+readonly BUDGET_POPUP_OPEN_P95=240 # popup-open-accept vs stock-completion-multi p95
 readonly BUDGET_POPUP_NAV_P50=5    # popup-navigate-accept vs popup-open-accept p50
 readonly BUDGET_POPUP_NAV_P95=8    # popup-navigate-accept vs popup-open-accept p95
 readonly BUDGET_POPUP_CANCEL_P50=5 # popup-cancel vs popup-open-accept p50

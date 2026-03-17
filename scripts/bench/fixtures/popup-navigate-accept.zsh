@@ -31,13 +31,11 @@ expect "__CBX_READY__"
 # Down arrow (\x1b[B) maps to -cbx-popup-next-widget. With 2 candidates,
 # two Downs wrap around: 1 -> 2 -> 1. No delay between arrows; zle
 # processes keystrokes sequentially within recursive-edit.
-# Brief pause lets the accept path complete before Enter executes the line.
 send -- "echo \$tmpdir/alph\t"
 after 200
 send -- "\x1b\[B"
 send -- "\x1b\[B"
 send -- "\r"
-after 100
 send -- "\r"
 expect "bench> "
 

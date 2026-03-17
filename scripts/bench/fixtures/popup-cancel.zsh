@@ -30,11 +30,10 @@ expect "__CBX_READY__"
 # Trigger popup, wait for render, cancel with Ctrl-G.
 # Uses Ctrl-G (\x07) instead of Escape to avoid KEYTIMEOUT delay (~400ms).
 # After cancel, BUFFER is restored to pre-completion state.
-# Ctrl-U clears the line, Enter gets a clean prompt.
+# Ctrl-U clears the line immediately, Enter gets a clean prompt.
 send -- "echo \$tmpdir/alph\t"
 after 200
 send -- "\x07"
-after 50
 send -- "\x15\r"
 expect "bench> "
 

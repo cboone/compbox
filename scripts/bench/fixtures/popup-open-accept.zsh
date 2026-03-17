@@ -29,11 +29,9 @@ expect "__CBX_READY__"
 
 # Trigger popup with multi-match prefix, wait for render, accept first item.
 # Enter (^M) maps to -cbx-popup-accept-widget in the _cbx_menu keymap.
-# Brief pause lets the accept path complete before Enter executes the line.
 send -- "echo \$tmpdir/alph\t"
 after 200
 send -- "\r"
-after 100
 send -- "\r"
 expect "bench> "
 
