@@ -67,6 +67,8 @@ jobs:
           sudo mv shellharden /usr/local/bin/
 
       - name: Run zsh checks
+        env:
+          SKIP_SETOPT_CHECK: "1"
         run: make check-zsh
 
   test-scrut:

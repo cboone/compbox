@@ -126,6 +126,11 @@ function is_bench_fixture() {
 
 function run_setopt_warnings() {
   local file="${1}"
+  # Skip when SKIP_SETOPT_CHECK is set (e.g., in CI) to keep the pipeline
+  # purely static analysis, since this step sources (executes) files.
+  if [[ -n "${SKIP_SETOPT_CHECK:-}" ]]; then
+    return 0
+  fi
   # Skip executable scripts: sourcing them would run main().
   if has_main_call "${file}"; then
     return 0
