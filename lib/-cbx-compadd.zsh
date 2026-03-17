@@ -36,6 +36,14 @@ function -cbx-compadd() {
     -cbx-capture-from-compadd "${@}" || true
   fi
 
+  # Suppress stock insertion and listing for multi-match.
+  # The popup loop handles insertion; no-match and single-match
+  # paths are unaffected because nmatches <= 1 at that point.
+  if ((_CBX_NMATCHES > 1)); then
+    compstate[insert]=''
+    compstate[list]=''
+  fi
+
   return ${ret}
 }
 
