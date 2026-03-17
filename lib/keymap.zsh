@@ -26,7 +26,9 @@ function -cbx-popup-keymap-create() {
   bindkey -M _cbx_menu $'\e[Z' -cbx-popup-prev-widget
 
   # Accept (Enter) and cancel (Escape, Ctrl-C, Ctrl-G).
+  # Bind both ^M (CR) and ^J (LF) because pty ICRNL translates \r to \n.
   bindkey -M _cbx_menu '^M' -cbx-popup-accept-widget
+  bindkey -M _cbx_menu '^J' -cbx-popup-accept-widget
   bindkey -M _cbx_menu '^[' -cbx-popup-cancel-widget
   bindkey -M _cbx_menu '^C' -cbx-popup-cancel-widget
   bindkey -M _cbx_menu '^G' -cbx-popup-cancel-widget

@@ -49,6 +49,9 @@ function cbx-complete() {
     {
       zle recursive-edit
     } always {
+      # Suppress the send-break exception so execution continues to the
+      # accept/cancel check below.
+      TRY_BLOCK_ERROR=0
       zle -K "${saved_keymap}"
       -cbx-popup-erase
       -cbx-popup-keymap-destroy
