@@ -19,23 +19,30 @@ readonly PROJECT_ROOT="${0:A:h:h}"
 
 source "${PROJECT_ROOT}/scripts/lib/find-zsh-files.zsh"
 
-# SC codes excluded as false positives when running shellcheck --shell=bash
-# on zsh scripts:
-#   SC1036  "(" unexpected: zsh glob qualifiers like (N) and (.)
-#   SC1072  Expected test expression: triggered by zsh glob qualifier syntax
-#   SC1073  Could not parse: triggered by zsh glob qualifier syntax
+# Canonical SC codes excluded per the check-zsh-scripts skill (cboone/cc-plugins).
+# These are stable false positives when running shellcheck --shell=bash on zsh
+# scripts. Reference: check-zsh-scripts SKILL.md section 3c and
+# references/tools/shellcheck.md.
 #   SC1090  Non-constant source: dynamic source paths
-#   SC1091  Not following sourced file: unresolvable source paths
-#   SC2034  Variable appears unused: framework/plugin variables
 #   SC2039  Non-POSIX features: zsh builtins flagged when using --shell=bash
 #   SC2154  Variable referenced but not assigned: framework variables
 #   SC2168  local outside function: zsh allows local in broader contexts
-#   SC2206  Quote to prevent splitting: zsh does not split unquoted expansions
-#   SC2215  Flag used as command name: zsh internal functions with - prefix
 #   SC2296  Parameter expansion in ${...}: zsh expansion flags
 #   SC2299  Nested ${...}: zsh nested parameter expansions
-#   SC3003-SC3057  Bashism warnings: zsh features flagged as non-POSIX
-readonly SHELLCHECK_EXCLUDE="SC1036,SC1072,SC1073,SC1090,SC1091,SC2034,SC2039,SC2154,SC2168,SC2206,SC2215,SC2296,SC2299,SC3003,SC3010,SC3030,SC3037,SC3043,SC3044,SC3046,SC3054,SC3057"
+readonly -a _SHELLCHECK_SKILL_CODES=(SC1090 SC2039 SC2154 SC2168 SC2296 SC2299)
+
+# Project-specific SC codes excluded for compbox. These fire on legitimate zsh
+# patterns that the skill's canonical list does not cover.
+#   SC1036  "(" unexpected: zsh glob qualifiers like (N) and (.)
+#   SC1072  Expected test expression: triggered by zsh glob qualifier syntax
+#   SC1073  Could not parse: triggered by zsh glob qualifier syntax
+#   SC2034  Variable appears unused: zsh completion system variables (PREFIX,
+#           SUFFIX, IPREFIX, ISUFFIX), test fixture globals, indirect expansion
+#   SC2206  Quote to prevent splitting: zsh does not split unquoted expansions
+#   SC2215  Flag used as command name: zsh internal functions with - prefix
+readonly -a _SHELLCHECK_PROJECT_CODES=(SC1036 SC1072 SC1073 SC2034 SC2206 SC2215)
+
+readonly SHELLCHECK_EXCLUDE="${(j:,:)_SHELLCHECK_SKILL_CODES},${(j:,:)_SHELLCHECK_PROJECT_CODES}"
 
 # Print multi-line output with indentation.
 function print_indented() {
