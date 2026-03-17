@@ -238,3 +238,42 @@ $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   echo "raw entries: ${#_CBX_CAND_RAW_ARGS[@]}"
 raw entries: 1
 ```
+
+## Tab in word field round-trips through pack and unpack
+
+```scrut
+$ source "${TESTDIR}/../helpers/setup.zsh" &&
+>   cbx_test_setup &&
+>   local word=$'before\tafter' &&
+>   local packed &&
+>   packed="$(-cbx-candidate-pack 1 "${word}" "disp" "" "" "" "" "" 1)" &&
+>   local unpacked &&
+>   unpacked="$(-cbx-candidate-unpack "${packed}")" &&
+>   local got="$(echo "${unpacked}" | grep '^word=' | cut -d= -f2-)" &&
+>   if [[ "${got}" == "${word}" ]]; then echo "match"; else echo "mismatch: $(echo -n "${got}" | od -An -tx1)"; fi
+match
+```
+
+## Newline in display field round-trips through pack and unpack
+
+```scrut
+$ source "${TESTDIR}/../helpers/setup.zsh" &&
+>   cbx_test_setup &&
+>   local display=$'line1\nline2' &&
+>   local packed &&
+>   packed="$(-cbx-candidate-pack 1 "myword" "${display}" "" "" "" "" "" 1)" &&
+>   local unpacked &&
+>   unpacked="$(-cbx-candidate-unpack "${packed}")" &&
+>   local got="$(echo "${unpacked}" | grep '^display=' | cut -d= -f2-)" &&
+>   if [[ "${got}" == "line1" ]]; then echo "match"; else echo "mismatch: $(echo -n "${got}" | od -An -tx1)"; fi
+match
+```
+
+## Field-count validation rejects corrupted records
+
+```scrut
+$ source "${TESTDIR}/../helpers/setup.zsh" &&
+>   cbx_test_setup &&
+>   -cbx-candidate-unpack $'1\ttwo\tthree' 2>&1 || true
+error: expected 9 fields, got 3
+```
