@@ -35,7 +35,7 @@ function -cbx-popup-render-buffer() {
   # clamp displayed text so rendered width stays within pane bounds.
   local -i clamp_width=0
   local -i max_display_width=0
-  if (( ${+_CBX_POPUP_WIDTH} )); then
+  if ((${+_CBX_POPUP_WIDTH})); then
     clamp_width=1
     max_display_width=$((_CBX_POPUP_WIDTH - 4))
     if ((max_display_width < 0)); then
