@@ -59,9 +59,13 @@ function -cbx-popup-rows-from-candidates() {
 
     # Filter: only include words that match the captured prefix.
     # Compadd passes all candidates; only some match the prefix.
+    # For path completions, PREFIX contains the full typed path
+    # (e.g., "~/D") but words are bare filenames (e.g., "Desktop").
+    # Use only the final path component of the prefix for matching.
     if [[ -n "${field5}" ]]; then
       -cbx-candidate-unescape-field "${field5}"
       local prefix="${REPLY}"
+      prefix="${prefix##*/}"
       -cbx-candidate-unescape-field "${field2}"
       local word="${REPLY}"
       if [[ "${word}" != "${prefix}"* ]]; then
