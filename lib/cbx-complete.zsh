@@ -48,12 +48,23 @@ function cbx-complete() {
 
     # Probe cursor position and compute placement.
     # If any positioning precondition fails, skip popup for this
-    # invocation and return without showing anything.
+    # invocation and route back to stock completion behavior.
     if ! -cbx-dsr-probe ||
       ! -cbx-pane-geometry ||
       ! -cbx-popup-dimensions ||
       ! -cbx-popup-placement; then
       typeset -gi _CBX_POPUP_ACTIVE=0
+
+      # Restore pre-completion state and rerun stock completion
+      # without capture so this invocation preserves stock semantics.
+      BUFFER="${saved_buffer}"
+      CURSOR="${saved_cursor}"
+      if [[ "${KEYMAP}" == "viins" ]]; then
+        zle "${_CBX_ORIG_TAB_VIINS}"
+      else
+        zle "${_CBX_ORIG_TAB_EMACS}"
+      fi
+
       return
     fi
 

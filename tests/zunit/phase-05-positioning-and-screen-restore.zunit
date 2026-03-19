@@ -298,6 +298,15 @@
   local calls_joined="${(j:|:)zle_calls}"
   [[ "${calls_joined}" == *"recursive-edit"* ]] && local saw_recursive=1 || local saw_recursive=0
   assert "${saw_recursive}" same_as "0"
+
+  local -i stock_calls=0
+  local call
+  for call in "${zle_calls[@]}"; do
+    if [[ "${call}" == "expand-or-complete" ]]; then
+      stock_calls=$((stock_calls + 1))
+    fi
+  done
+  assert "${stock_calls}" same_as "2"
 }
 
 @test 'placement failure path skips popup in cbx-complete' {
@@ -343,6 +352,15 @@
 
   assert "${saw_render}" same_as "0"
   assert "${_CBX_POPUP_ACTIVE}" same_as "0"
+
+  local -i stock_calls=0
+  local call
+  for call in "${zle_calls[@]}"; do
+    if [[ "${call}" == "expand-or-complete" ]]; then
+      stock_calls=$((stock_calls + 1))
+    fi
+  done
+  assert "${stock_calls}" same_as "2"
 }
 
 @test 'cbx-complete accept path with positioning calls screen save and restore' {
