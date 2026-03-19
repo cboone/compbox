@@ -72,12 +72,6 @@ investigation priority:
 1. Establish final p50 and p95 budgets for key scenarios.
 1. Add benchmark regression checks against saved baseline artifacts.
 1. Fail CI on significant regressions where practical.
-1. Measure DSR probe overhead per popup invocation (deferred from Phase 05).
-1. Measure capture-pane save and CUP restore timing by popup height and
-   placement direction (deferred from Phase 05).
-1. Track p95 for open and close lifecycle with medium candidate lists
-   (deferred from Phase 05; existing lifecycle fixtures capture this
-   implicitly, but isolated measurement confirms Phase 05 overhead).
 
 ## File-Level Plan
 

@@ -26,12 +26,14 @@ readonly BUDGET_COMPLETION_P95=8 # pass-through-tab vs stock-completion p95
 # Popup budgets measure delta between popup fixtures and baselines.
 # Raw popup times include ~200ms expect sleep (after 200) for render wait.
 # Popup-to-popup deltas cancel this out.
-readonly BUDGET_POPUP_OPEN_P50=225 # popup-open-accept vs stock-completion-multi p50
-readonly BUDGET_POPUP_OPEN_P95=240 # popup-open-accept vs stock-completion-multi p95
-readonly BUDGET_POPUP_NAV_P50=5    # popup-navigate-accept vs popup-open-accept p50
-readonly BUDGET_POPUP_NAV_P95=8    # popup-navigate-accept vs popup-open-accept p95
-readonly BUDGET_POPUP_CANCEL_P50=5 # popup-cancel vs popup-open-accept p50
-readonly BUDGET_POPUP_CANCEL_P95=8 # popup-cancel vs popup-open-accept p95
+readonly BUDGET_POPUP_OPEN_P50=225   # popup-open-accept vs stock-completion-multi p50
+readonly BUDGET_POPUP_OPEN_P95=240   # popup-open-accept vs stock-completion-multi p95
+readonly BUDGET_POPUP_NAV_P50=5      # popup-navigate-accept vs popup-open-accept p50
+readonly BUDGET_POPUP_NAV_P95=8      # popup-navigate-accept vs popup-open-accept p95
+readonly BUDGET_POPUP_CANCEL_P50=5   # popup-cancel vs popup-open-accept p50
+readonly BUDGET_POPUP_CANCEL_P95=8   # popup-cancel vs popup-open-accept p95
+readonly BUDGET_POPUP_MEDIUM_P50=225 # popup-open-accept-medium vs stock-multi-medium p50
+readonly BUDGET_POPUP_MEDIUM_P95=240 # popup-open-accept-medium vs stock-multi-medium p95
 
 typeset -ga BENCH_SCENARIO_NAMES=()
 typeset -ga BENCH_SCENARIO_COMMANDS=()
@@ -75,6 +77,8 @@ function require_fixtures() {
     "${FIXTURES_DIR}/stock-compinit.zsh"
     "${FIXTURES_DIR}/stock-completion.zsh"
     "${FIXTURES_DIR}/stock-completion-multi.zsh"
+    "${FIXTURES_DIR}/stock-completion-multi-medium.zsh"
+    "${FIXTURES_DIR}/popup-open-accept-medium.zsh"
   )
 
   local fixture
@@ -146,6 +150,10 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-navigate-accept.zsh")
     BENCH_SCENARIO_NAMES+=("popup-cancel")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-cancel.zsh")
+    BENCH_SCENARIO_NAMES+=("stock-completion-multi-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion-multi-medium.zsh")
+    BENCH_SCENARIO_NAMES+=("popup-open-accept-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-open-accept-medium.zsh")
     ;;
   smoke)
     BENCH_SCENARIO_NAMES+=("stock-compinit")
@@ -182,6 +190,10 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-navigate-accept.zsh")
     BENCH_SCENARIO_NAMES+=("popup-cancel")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-cancel.zsh")
+    BENCH_SCENARIO_NAMES+=("stock-completion-multi-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion-multi-medium.zsh")
+    BENCH_SCENARIO_NAMES+=("popup-open-accept-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-open-accept-medium.zsh")
     ;;
   *)
     print "Unknown benchmark mode: ${mode}" >&2
@@ -373,6 +385,17 @@ function run_benchmarks() {
     printf "  %-38s" "popup-cancel vs popup-open"
     print_delta "${json_out}" "popup-open-accept" "popup-cancel" \
       "${BUDGET_POPUP_CANCEL_P50}" "${BUDGET_POPUP_CANCEL_P95}"
+  fi
+
+  if ((${+has_scenario[stock-completion-multi-medium]} && ${+has_scenario[popup-open-accept-medium]})); then
+    if ((!popup_printed_header)); then
+      print ""
+      print "${C_BOLD}Popup overhead${C_RESET}"
+      popup_printed_header=1
+    fi
+    printf "  %-38s" "popup-medium vs stock-multi-medium"
+    print_delta "${json_out}" "stock-completion-multi-medium" "popup-open-accept-medium" \
+      "${BUDGET_POPUP_MEDIUM_P50}" "${BUDGET_POPUP_MEDIUM_P95}"
   fi
 }
 
