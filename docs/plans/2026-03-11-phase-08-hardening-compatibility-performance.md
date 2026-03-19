@@ -26,8 +26,39 @@ and lock performance budgets before declaring v1 ready.
 ### Reliability hardening
 
 1. Audit all exit paths for cursor, keymap, preview, and screen restore cleanup.
-1. Ensure SIGINT and SIGWINCH behavior is deterministic and artifact-free.
+1. Ensure SIGINT behavior is deterministic and artifact-free.
 1. Add guardrails for reentrancy and partial-state failures.
+
+### Resize handling (SIGWINCH)
+
+Phase 05 found that immediate popup dismiss on terminal resize is not
+possible with the current rendering approach (CUP escape sequences to
+`/dev/tty`). The popup is invisible to zle's refresh cycle, so zle
+cannot redraw or clean it up on SIGWINCH. Signal handlers cannot call
+zle builtins (`send-break`, `zle -U`), `zle-line-pre-redraw` does not
+fire after SIGWINCH during `recursive-edit`, and reading from `/dev/tty`
+inside a zle widget corrupts input state.
+
+Current behavior: TRAPWINCH sets a flag; popup widgets check it on the
+next keypress and call `send-break`. The popup dismisses on the first
+keypress after resize.
+
+To achieve immediate resize handling (like zsh's built-in `menu-select`),
+the rendering architecture must change. Candidates, in order of
+investigation priority:
+
+1. **`tmux display-menu`**: Delegates rendering, navigation, resize, and
+   cleanup to tmux. Perfect style match (the project goal is "styled to
+   match tmux's native menus"). Main challenge: `display-menu` returns
+   immediately; selection must be passed back via `wait-for`, pane
+   options, or `send-keys`. Cancel detection also needs a solution.
+1. **`POSTDISPLAY`**: Integrates with zle's refresh cycle (automatic
+   resize redraw). Limitations: content always below the buffer,
+   left-aligned, no arbitrary column positioning, no embedded ANSI
+   escapes (colors via `region_highlight` only).
+1. **`tmux display-popup`**: Runs a selector process inside a popup
+   overlay. More flexible than `display-menu` but requires IPC for
+   result passing and has the same synchronization challenges.
 
 ### Compatibility matrix
 
