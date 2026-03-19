@@ -23,10 +23,16 @@ function -cbx-dsr-probe() {
   print -n $'\e[6n' >/dev/tty
 
   # Read response with timeout. Max 20 chars to prevent runaway reads.
+  # Total budget of 2 seconds caps worst-case latency when the terminal
+  # is slow or has stale data after the flush.
   local response=""
   local char
   local -i i=0
+  local -F deadline=$((SECONDS + 2))
   while ((i < 20)); do
+    if ((SECONDS >= deadline)); then
+      return 1
+    fi
     if ! read -t 1 -k 1 char </dev/tty 2>/dev/null; then
       return 1
     fi
