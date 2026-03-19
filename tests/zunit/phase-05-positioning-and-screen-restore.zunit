@@ -363,6 +363,74 @@
   assert "${stock_calls}" same_as "2"
 }
 
+@test 'cbx-complete truncates popup rows when height is clamped' {
+  function -cbx-complete-should-popup() {
+    return 0
+  }
+
+  function -cbx-popup-rows-from-candidates() {
+    local tab=$'\t'
+    typeset -ga _CBX_POPUP_ROWS=(
+      "1${tab}alpha"
+      "2${tab}bravo"
+      "3${tab}charlie"
+      "4${tab}delta"
+    )
+  }
+
+  LINES=24
+  COLUMNS=80
+
+  function -cbx-dsr-probe() {
+    typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
+    return 0
+  }
+  function -cbx-pane-geometry() {
+    typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
+    return 0
+  }
+  function -cbx-popup-dimensions() {
+    typeset -gi _CBX_POPUP_HEIGHT=6 _CBX_POPUP_WIDTH=10
+    return 0
+  }
+  function -cbx-popup-placement() {
+    # Simulate placement clamping height to 4 total lines (2 visible rows).
+    typeset -gi _CBX_POPUP_ROW=6 _CBX_POPUP_COL=1
+    typeset -gi _CBX_POPUP_HEIGHT=4
+    typeset -g _CBX_POPUP_DIRECTION="below"
+    return 0
+  }
+
+  typeset -gi render_row_count=0
+  function -cbx-popup-render() {
+    typeset -gi render_row_count=${#_CBX_POPUP_ROWS[@]}
+  }
+
+  function -cbx-popup-erase() { :; }
+  function -cbx-popup-keymap-create() { :; }
+  function -cbx-popup-keymap-destroy() { :; }
+  function -cbx-screen-save() { return 1; }
+  function -cbx-screen-restore() { return 1; }
+
+  function zle() {
+    if [[ "${1}" == "recursive-edit" ]]; then
+      typeset -g _CBX_POPUP_ACTION="cancel"
+    fi
+    return 0
+  }
+
+  _CBX_ORIG_TAB_EMACS="expand-or-complete"
+  _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+  KEYMAP="main"
+  BUFFER="echo test"
+  CURSOR="${#BUFFER}"
+
+  cbx-complete
+
+  assert "${render_row_count}" same_as "2"
+  assert "${#_CBX_POPUP_ROWS[@]}" same_as "2"
+}
+
 @test 'cbx-complete accept path with positioning calls screen save and restore' {
   function -cbx-complete-should-popup() {
     return 0

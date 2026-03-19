@@ -68,6 +68,16 @@ function cbx-complete() {
       return
     fi
 
+    # When placement clamps popup height, keep only rows that
+    # can be displayed so selection and accept stay in sync.
+    local -i max_visible=$((_CBX_POPUP_HEIGHT - 2))
+    if ((${#_CBX_POPUP_ROWS[@]} > max_visible)); then
+      _CBX_POPUP_ROWS=("${(@)_CBX_POPUP_ROWS[1,$max_visible]}")
+      if ((_CBX_POPUP_SELECTED > max_visible)); then
+        typeset -gi _CBX_POPUP_SELECTED="${max_visible}"
+      fi
+    fi
+
     # Save screen behind popup (tmux only, non-fatal).
     -cbx-screen-save 2>/dev/null || true
 
