@@ -178,6 +178,17 @@ function -cbx-popup-placement() {
   local -i popup_h="${_CBX_POPUP_HEIGHT}"
   local -i popup_w="${_CBX_POPUP_WIDTH}"
 
+  # Need enough width for the frame and padding.
+  if ((pane_w < 4)); then
+    return 1
+  fi
+
+  # Keep popup width inside pane bounds.
+  if ((popup_w > pane_w)); then
+    popup_w="${pane_w}"
+    typeset -gi _CBX_POPUP_WIDTH="${popup_w}"
+  fi
+
   # Below placement: popup starts on the row after the cursor.
   local -i rows_below=$((pane_h - cursor_row))
   # Above placement: popup ends on the row before the cursor.

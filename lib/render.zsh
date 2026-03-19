@@ -31,6 +31,18 @@ function -cbx-popup-render-buffer() {
     max_visible=1
   fi
 
+  # When popup width is precomputed (Phase 05 placement path),
+  # clamp displayed text so rendered width stays within pane bounds.
+  local -i clamp_width=0
+  local -i max_display_width=0
+  if (( ${+_CBX_POPUP_WIDTH} )); then
+    clamp_width=1
+    max_display_width=$((_CBX_POPUP_WIDTH - 4))
+    if ((max_display_width < 0)); then
+      max_display_width=0
+    fi
+  fi
+
   # Extract display strings and calculate max width.
   local -a displays=()
   local max_width=0
@@ -43,6 +55,13 @@ function -cbx-popup-render-buffer() {
       break
     fi
     disp="${row#*${tab}}"
+    if ((clamp_width)) && ((${#disp} > max_display_width)); then
+      if ((max_display_width == 0)); then
+        disp=""
+      else
+        disp="${disp[1,$max_display_width]}"
+      fi
+    fi
     displays+=("${disp}")
     if ((${#disp} > max_width)); then
       max_width=${#disp}

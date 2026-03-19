@@ -141,6 +141,18 @@
   -cbx-popup-placement
 
   assert "${_CBX_POPUP_COL}" same_as "1"
+  assert "${_CBX_POPUP_WIDTH}" same_as "5"
+}
+
+@test 'placement clamps popup width to pane width' {
+  typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=4
+  typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=8
+  typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=20
+  typeset -ga _CBX_CANDIDATES=()
+
+  -cbx-popup-placement
+
+  assert "${_CBX_POPUP_WIDTH}" same_as "8"
 }
 
 @test 'anchor col offsets by prefix width' {
@@ -201,6 +213,22 @@
   # Buffer should contain newline-CR for relative movement.
   [[ "${REPLY}" == *$'\n\r'* ]] && local has_newline=1 || local has_newline=0
   assert "${has_newline}" same_as "1"
+}
+
+@test 'render buffer truncates row text to clamped popup width' {
+  local tab=$'\t'
+  typeset -ga _CBX_POPUP_ROWS=("1${tab}abcdefghij")
+  typeset -gi _CBX_POPUP_SELECTED=0
+  typeset -gi _CBX_POPUP_HEIGHT=3
+  typeset -gi _CBX_POPUP_WIDTH=8
+
+  -cbx-popup-render-buffer
+
+  [[ "${REPLY}" == *"abcd"* ]] && local has_abcd=1 || local has_abcd=0
+  [[ "${REPLY}" == *"abcde"* ]] && local has_abcde=1 || local has_abcde=0
+
+  assert "${has_abcd}" same_as "1"
+  assert "${has_abcde}" same_as "0"
 }
 
 @test 'erase buffer uses CUP sequences with placement globals' {
