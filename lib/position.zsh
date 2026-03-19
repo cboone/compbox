@@ -183,14 +183,28 @@ function -cbx-popup-placement() {
   # Above placement: popup ends on the row before the cursor.
   local -i rows_above=$((cursor_row - 1))
 
-  if ((rows_below >= popup_h)); then
-    typeset -gi _CBX_POPUP_ROW=$((cursor_row + 1))
+  # Pick the direction with more room. Clamp popup height to fit
+  # rather than failing when the candidate list is taller than the
+  # available space. The visible rows are truncated; scrolling is
+  # added in Phase 07.
+  if ((rows_below >= rows_above)); then
     typeset -g _CBX_POPUP_DIRECTION="below"
-  elif ((rows_above >= popup_h)); then
-    typeset -gi _CBX_POPUP_ROW=$((cursor_row - popup_h))
-    typeset -g _CBX_POPUP_DIRECTION="above"
+    if ((popup_h > rows_below)); then
+      popup_h="${rows_below}"
+      typeset -gi _CBX_POPUP_HEIGHT="${popup_h}"
+    fi
+    typeset -gi _CBX_POPUP_ROW=$((cursor_row + 1))
   else
-    # Not enough room in either direction.
+    typeset -g _CBX_POPUP_DIRECTION="above"
+    if ((popup_h > rows_above)); then
+      popup_h="${rows_above}"
+      typeset -gi _CBX_POPUP_HEIGHT="${popup_h}"
+    fi
+    typeset -gi _CBX_POPUP_ROW=$((cursor_row - popup_h))
+  fi
+
+  # Need at least 3 rows (top border + 1 candidate + bottom border).
+  if ((popup_h < 3)); then
     return 1
   fi
 

@@ -20,12 +20,28 @@ function -cbx-popup-render-buffer() {
     return
   fi
 
+  # Determine how many rows to display. When the popup height has
+  # been clamped by placement, only show what fits (height - 2 for
+  # borders). Scrolling is added in Phase 07.
+  local -i max_visible=$((${_CBX_POPUP_HEIGHT:-row_count + 2} - 2))
+  if ((max_visible > row_count)); then
+    max_visible="${row_count}"
+  fi
+  if ((max_visible < 1)); then
+    max_visible=1
+  fi
+
   # Extract display strings and calculate max width.
   local -a displays=()
   local max_width=0
   local row disp
   local tab=$'\t'
+  local -i i=0
   for row in "${_CBX_POPUP_ROWS[@]}"; do
+    ((i++))
+    if ((i > max_visible)); then
+      break
+    fi
     disp="${row#*${tab}}"
     displays+=("${disp}")
     if ((${#disp} > max_width)); then
@@ -102,7 +118,7 @@ function -cbx-popup-render-buffer() {
   buf+="${esc}8${esc}[?25h"
 
   # Store line count for erase.
-  typeset -gi _CBX_POPUP_RENDERED_LINES=$((row_count + 2))
+  typeset -gi _CBX_POPUP_RENDERED_LINES=$((max_visible + 2))
 
   REPLY="${buf}"
 }
