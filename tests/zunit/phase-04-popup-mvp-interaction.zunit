@@ -214,30 +214,7 @@
     typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
   }
 
-  # Match LINES/COLUMNS to pane geometry so resize detection does not trigger.
-  LINES=24
-  COLUMNS=80
-
-  # Phase 05 positioning stubs.
-  function -cbx-dsr-probe() {
-    typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
-    return 0
-  }
-  function -cbx-pane-geometry() {
-    typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
-    return 0
-  }
-  function -cbx-popup-dimensions() {
-    typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=10
-    return 0
-  }
-  function -cbx-popup-placement() {
-    typeset -gi _CBX_POPUP_ROW=6 _CBX_POPUP_COL=1
-    typeset -g _CBX_POPUP_DIRECTION="below"
-    return 0
-  }
-  function -cbx-screen-save() { return 1; }
-  function -cbx-screen-restore() { return 1; }
+  cbx_stub_phase05_positioning
 
   local -a zle_calls=()
   function zle() {
@@ -292,30 +269,7 @@
     typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
   }
 
-  # Match LINES/COLUMNS to pane geometry so resize detection does not trigger.
-  LINES=24
-  COLUMNS=80
-
-  # Phase 05 positioning stubs.
-  function -cbx-dsr-probe() {
-    typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
-    return 0
-  }
-  function -cbx-pane-geometry() {
-    typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
-    return 0
-  }
-  function -cbx-popup-dimensions() {
-    typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=10
-    return 0
-  }
-  function -cbx-popup-placement() {
-    typeset -gi _CBX_POPUP_ROW=6 _CBX_POPUP_COL=1
-    typeset -g _CBX_POPUP_DIRECTION="below"
-    return 0
-  }
-  function -cbx-screen-save() { return 1; }
-  function -cbx-screen-restore() { return 1; }
+  cbx_stub_phase05_positioning
 
   local original_buffer="echo /tmp/alph"
   local original_cursor="${#original_buffer}"

@@ -91,6 +91,33 @@ function cbx_load_plugin() {
   done
 }
 
+function cbx_stub_phase05_positioning() {
+  # Stub Phase 05 positioning functions for tests that exercise the
+  # popup lifecycle without needing real DSR or tmux interaction.
+  LINES=24
+  COLUMNS=80
+
+  function -cbx-dsr-probe() {
+    typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
+    return 0
+  }
+  function -cbx-pane-geometry() {
+    typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
+    return 0
+  }
+  function -cbx-popup-dimensions() {
+    typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=10
+    return 0
+  }
+  function -cbx-popup-placement() {
+    typeset -gi _CBX_POPUP_ROW=6 _CBX_POPUP_COL=1
+    typeset -g _CBX_POPUP_DIRECTION="below"
+    return 0
+  }
+  function -cbx-screen-save() { return 1; }
+  function -cbx-screen-restore() { return 1; }
+}
+
 function cbx_reset() {
   emulate -L zsh
   setopt NO_UNSET PIPE_FAIL
