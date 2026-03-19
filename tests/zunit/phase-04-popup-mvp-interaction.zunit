@@ -214,6 +214,10 @@
     typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
   }
 
+  # Match LINES/COLUMNS to pane geometry so resize detection does not trigger.
+  LINES=24
+  COLUMNS=80
+
   # Phase 05 positioning stubs.
   function -cbx-dsr-probe() {
     typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
@@ -287,6 +291,10 @@
     local tab=$'\t'
     typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
   }
+
+  # Match LINES/COLUMNS to pane geometry so resize detection does not trigger.
+  LINES=24
+  COLUMNS=80
 
   # Phase 05 positioning stubs.
   function -cbx-dsr-probe() {

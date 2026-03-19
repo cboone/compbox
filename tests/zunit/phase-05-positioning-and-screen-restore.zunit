@@ -292,11 +292,9 @@
 
   cbx-complete
 
-  # Popup should not have been rendered.
   assert "${saw_render}" same_as "0"
   assert "${_CBX_POPUP_ACTIVE}" same_as "0"
 
-  # recursive-edit should not have been called.
   local calls_joined="${(j:|:)zle_calls}"
   [[ "${calls_joined}" == *"recursive-edit"* ]] && local saw_recursive=1 || local saw_recursive=0
   assert "${saw_recursive}" same_as "0"
@@ -357,6 +355,10 @@
     typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
   }
 
+  # Match LINES/COLUMNS to pane geometry so resize detection does not trigger.
+  LINES=24
+  COLUMNS=80
+
   function -cbx-dsr-probe() {
     typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
     return 0
@@ -412,6 +414,86 @@
   assert "${saw_screen_save}" same_as "1"
   assert "${saw_screen_restore}" same_as "1"
   assert "${_CBX_POPUP_ACTIVE}" same_as "0"
+}
+
+@test 'resize during popup skips CUP cleanup and redraws prompt' {
+  function -cbx-complete-should-popup() {
+    return 0
+  }
+
+  function -cbx-popup-rows-from-candidates() {
+    local tab=$'\t'
+    typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
+  }
+
+  LINES=24
+  COLUMNS=80
+
+  function -cbx-dsr-probe() {
+    typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
+    return 0
+  }
+  function -cbx-pane-geometry() {
+    typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
+    return 0
+  }
+  function -cbx-popup-dimensions() {
+    typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=10
+    return 0
+  }
+  function -cbx-popup-placement() {
+    typeset -gi _CBX_POPUP_ROW=6 _CBX_POPUP_COL=1
+    typeset -g _CBX_POPUP_DIRECTION="below"
+    return 0
+  }
+
+  function -cbx-screen-save() {
+    typeset -ga _CBX_SCREEN_SAVED=("saved-a" "saved-b")
+    return 0
+  }
+
+  typeset -gi saw_erase=0
+  function -cbx-popup-erase() { typeset -gi saw_erase=1; }
+
+  typeset -gi saw_screen_restore=0
+  function -cbx-screen-restore() {
+    typeset -gi saw_screen_restore=1
+    return 0
+  }
+
+  local -a zle_calls=()
+  function zle() {
+    zle_calls+=("${1}")
+    if [[ "${1}" == "recursive-edit" ]]; then
+      # Simulate resize: change LINES during recursive-edit.
+      LINES=30
+    fi
+    return 0
+  }
+
+  function -cbx-popup-render() { :; }
+  function -cbx-popup-keymap-create() { :; }
+  function -cbx-popup-keymap-destroy() { :; }
+
+  _CBX_ORIG_TAB_EMACS="expand-or-complete"
+  _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+  KEYMAP="main"
+  BUFFER="echo test"
+  CURSOR="${#BUFFER}"
+
+  cbx-complete
+
+  # Erase and screen restore should NOT have been called.
+  assert "${saw_erase}" same_as "0"
+  assert "${saw_screen_restore}" same_as "0"
+
+  # Saved screen state should have been cleared.
+  assert "${#_CBX_SCREEN_SAVED[@]}" same_as "0"
+
+  # reset-prompt should have been called instead.
+  local calls_joined="${(j:|:)zle_calls}"
+  [[ "${calls_joined}" == *"reset-prompt"* ]] && local saw_reset=1 || local saw_reset=0
+  assert "${saw_reset}" same_as "1"
 }
 
 @test 'disable cleans up phase 05 positioning globals' {

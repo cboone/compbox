@@ -49,10 +49,10 @@ function cbx-complete() {
     # Probe cursor position and compute placement.
     # If any positioning precondition fails, skip popup for this
     # invocation and return without showing anything.
-    if ! -cbx-dsr-probe \
-      || ! -cbx-pane-geometry \
-      || ! -cbx-popup-dimensions \
-      || ! -cbx-popup-placement; then
+    if ! -cbx-dsr-probe ||
+      ! -cbx-pane-geometry ||
+      ! -cbx-popup-dimensions ||
+      ! -cbx-popup-placement; then
       typeset -gi _CBX_POPUP_ACTIVE=0
       return
     fi
@@ -70,18 +70,49 @@ function cbx-complete() {
     # so a short timeout is safe and makes Escape feel instant.
     KEYTIMEOUT=1
 
+    # TRAPWINCH sets a flag that popup widgets check on the next
+    # keypress. This is the only reliable mechanism: zle builtins
+    # cannot be called from signal handlers, zle-line-pre-redraw
+    # does not fire after SIGWINCH during recursive-edit, and
+    # reading from /dev/tty inside a zle widget corrupts input
+    # state. The popup dismisses on the next keypress after resize.
+    typeset -gi _CBX_RESIZED=0
+    local saved_trapwinch=""
+    if ((${+functions[TRAPWINCH]})); then
+      saved_trapwinch="${functions[TRAPWINCH]}"
+    fi
+    functions[TRAPWINCH]='typeset -gi _CBX_RESIZED=1'
+
     {
       zle recursive-edit
     } always {
-      # Suppress the send-break exception so execution continues to the
-      # accept/cancel check below.
+      # Suppress the send-break exception so execution continues to
+      # the accept/cancel check below.
       TRY_BLOCK_ERROR=0
       KEYTIMEOUT="${saved_keytimeout}"
       zle -K "${saved_keymap}"
-      -cbx-popup-erase
-      if ! -cbx-screen-restore 2>/dev/null; then
-        zle reset-prompt 2>/dev/null || true
+
+      # Restore TRAPWINCH and clear resize flag.
+      if [[ -n "${saved_trapwinch}" ]]; then
+        functions[TRAPWINCH]="${saved_trapwinch}"
+      else
+        unfunction TRAPWINCH 2>/dev/null
       fi
+      unset _CBX_RESIZED 2>/dev/null
+
+      # Detect resize: if geometry changed since placement, the saved
+      # CUP positions and screen content are stale. Skip position-
+      # dependent cleanup and let reset-prompt redraw everything.
+      if ((LINES != _CBX_PANE_HEIGHT || COLUMNS != _CBX_PANE_WIDTH)); then
+        typeset -ga _CBX_SCREEN_SAVED=()
+        zle reset-prompt 2>/dev/null || true
+      else
+        -cbx-popup-erase
+        if ! -cbx-screen-restore 2>/dev/null; then
+          zle reset-prompt 2>/dev/null || true
+        fi
+      fi
+
       -cbx-popup-keymap-destroy
       if [[ -w /dev/tty ]]; then
         print -n $'\e[?25h' >/dev/tty

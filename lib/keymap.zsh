@@ -56,18 +56,31 @@ function -cbx-popup-keymap-destroy() {
 }
 
 # Widget handlers: called during recursive-edit from _cbx_menu keymap.
+# Each checks the resize flag first; if set, dismiss immediately.
 
 function -cbx-popup-next-widget() {
+  if ((_CBX_RESIZED)); then
+    zle send-break
+    return
+  fi
   -cbx-popup-next
   -cbx-popup-render
 }
 
 function -cbx-popup-prev-widget() {
+  if ((_CBX_RESIZED)); then
+    zle send-break
+    return
+  fi
   -cbx-popup-prev
   -cbx-popup-render
 }
 
 function -cbx-popup-accept-widget() {
+  if ((_CBX_RESIZED)); then
+    zle send-break
+    return
+  fi
   local tab=$'\t'
   local selected_row="${_CBX_POPUP_ROWS[${_CBX_POPUP_SELECTED}]}"
   typeset -g _CBX_APPLY_ID="${selected_row%%${tab}*}"
@@ -76,10 +89,17 @@ function -cbx-popup-accept-widget() {
 }
 
 function -cbx-popup-cancel-widget() {
+  if ((_CBX_RESIZED)); then
+    zle send-break
+    return
+  fi
   typeset -g _CBX_POPUP_ACTION="cancel"
   zle send-break
 }
 
 function -cbx-popup-noop-widget() {
-  :
+  if ((_CBX_RESIZED)); then
+    zle send-break
+    return
+  fi
 }
