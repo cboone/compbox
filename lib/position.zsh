@@ -84,12 +84,15 @@ function -cbx-pane-geometry() {
   emulate -L zsh
   setopt NO_UNSET PIPE_FAIL
 
-  # Get pane dimensions. Uses LINES/COLUMNS as primary source,
-  # falling back to tmux display-message.
+  # Get pane dimensions. Accepts optional height/width arguments,
+  # otherwise uses LINES/COLUMNS, falling back to tmux display-message.
 
-  if ((${LINES:-0} > 0)) && ((${COLUMNS:-0} > 0)); then
-    typeset -gi _CBX_PANE_HEIGHT="${LINES}"
-    typeset -gi _CBX_PANE_WIDTH="${COLUMNS}"
+  local -i pane_h="${1:-${LINES:-0}}"
+  local -i pane_w="${2:-${COLUMNS:-0}}"
+
+  if ((pane_h > 0)) && ((pane_w > 0)); then
+    typeset -gi _CBX_PANE_HEIGHT="${pane_h}"
+    typeset -gi _CBX_PANE_WIDTH="${pane_w}"
     return 0
   fi
 

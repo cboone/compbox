@@ -101,12 +101,15 @@ h=24 w=80
 
 ## Pane geometry fails when LINES and COLUMNS are zero
 
+LINES and COLUMNS are zsh special parameters that the shell keeps in
+sync with the terminal, so assigning zero at any scope is silently
+overwritten. Pass explicit zeros to bypass the special parameters.
+
 ```scrut
 $ source "${TESTDIR}/../helpers/setup.zsh" &&
 >   cbx_test_setup &&
->   LINES=0 COLUMNS=0 &&
 >   unset TMUX &&
->   -cbx-pane-geometry &&
+>   -cbx-pane-geometry 0 0 &&
 >   echo "ok" ||
 >   echo "failed"
 failed

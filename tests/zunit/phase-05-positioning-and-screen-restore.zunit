@@ -47,11 +47,9 @@
 }
 
 @test 'pane geometry fails when LINES and COLUMNS are zero and no TMUX' {
-  LINES=0
-  COLUMNS=0
   unset TMUX
 
-  run -cbx-pane-geometry
+  run -cbx-pane-geometry 0 0
 
   assert "${state}" same_as "1"
 }
