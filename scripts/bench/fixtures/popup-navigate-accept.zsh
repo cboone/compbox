@@ -24,6 +24,12 @@ send -- "autoload -Uz compinit; compinit -C\r"
 send -- "source \"$project_root/compbox.plugin.zsh\"\r"
 send -- "tmpdir=\$(mktemp -d)\r"
 send -- "touch \"\$tmpdir/alpha-one\" \"\$tmpdir/alpha-two\" \"\$tmpdir/beta\"\r"
+
+# Stub DSR probe: expect PTYs have no terminal emulator to respond to
+# DSR queries, so the read loop would consume keystrokes intended for
+# zle. Hardcode a plausible cursor position instead.
+send -- "function -cbx-dsr-probe() { typeset -gi _CBX_CURSOR_ROW=1 _CBX_CURSOR_COL=7; }\r"
+
 send -- "print __CBX_READY__\r"
 expect "__CBX_READY__"
 

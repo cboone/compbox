@@ -27,6 +27,12 @@ send -- "tmpdir=\$(mktemp -d)\r"
 send -- "touch \"\$tmpdir/alpha-01\" \"\$tmpdir/alpha-02\" \"\$tmpdir/alpha-03\" \"\$tmpdir/alpha-04\" \"\$tmpdir/alpha-05\"\r"
 send -- "touch \"\$tmpdir/alpha-06\" \"\$tmpdir/alpha-07\" \"\$tmpdir/alpha-08\" \"\$tmpdir/alpha-09\" \"\$tmpdir/alpha-10\"\r"
 send -- "touch \"\$tmpdir/alpha-11\" \"\$tmpdir/alpha-12\" \"\$tmpdir/alpha-13\" \"\$tmpdir/alpha-14\" \"\$tmpdir/alpha-15\"\r"
+
+# Stub DSR probe: expect PTYs have no terminal emulator to respond to
+# DSR queries, so the read loop would consume keystrokes intended for
+# zle. Hardcode a plausible cursor position instead.
+send -- "function -cbx-dsr-probe() { typeset -gi _CBX_CURSOR_ROW=1 _CBX_CURSOR_COL=7; }\r"
+
 send -- "print __CBX_READY__\r"
 expect "__CBX_READY__"
 
