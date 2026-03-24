@@ -67,6 +67,8 @@ function check_deps() {
 
 function require_fixtures() {
   local -a required_fixtures=(
+    "${FIXTURES_DIR}/dsr-parse-micro.zsh"
+    "${FIXTURES_DIR}/dsr-parse-noop.zsh"
     "${FIXTURES_DIR}/lifecycle-only.zsh"
     "${FIXTURES_DIR}/noop-plugin.zsh"
     "${FIXTURES_DIR}/noop-plugin-startup.zsh"
@@ -79,6 +81,8 @@ function require_fixtures() {
     "${FIXTURES_DIR}/stock-completion-multi.zsh"
     "${FIXTURES_DIR}/stock-completion-multi-medium.zsh"
     "${FIXTURES_DIR}/popup-open-accept-medium.zsh"
+    "${FIXTURES_DIR}/screen-save-restore-medium.zsh"
+    "${FIXTURES_DIR}/screen-save-restore-small.zsh"
   )
 
   local fixture
@@ -134,6 +138,10 @@ function configure_scenarios() {
 
   case "${mode}" in
   baseline)
+    BENCH_SCENARIO_NAMES+=("dsr-parse-noop")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/dsr-parse-noop.zsh")
+    BENCH_SCENARIO_NAMES+=("dsr-parse-micro")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/dsr-parse-micro.zsh")
     BENCH_SCENARIO_NAMES+=("stock-compinit")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-compinit.zsh")
     BENCH_SCENARIO_NAMES+=("lifecycle-only")
@@ -154,6 +162,10 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion-multi-medium.zsh")
     BENCH_SCENARIO_NAMES+=("popup-open-accept-medium")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-open-accept-medium.zsh")
+    BENCH_SCENARIO_NAMES+=("screen-save-restore-small")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/screen-save-restore-small.zsh")
+    BENCH_SCENARIO_NAMES+=("screen-save-restore-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/screen-save-restore-medium.zsh")
     ;;
   smoke)
     BENCH_SCENARIO_NAMES+=("stock-compinit")
@@ -170,6 +182,10 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-open-accept.zsh")
     ;;
   full)
+    BENCH_SCENARIO_NAMES+=("dsr-parse-noop")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/dsr-parse-noop.zsh")
+    BENCH_SCENARIO_NAMES+=("dsr-parse-micro")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/dsr-parse-micro.zsh")
     BENCH_SCENARIO_NAMES+=("stock-zsh")
     BENCH_SCENARIO_COMMANDS+=("zsh -f -c 'exit'")
     BENCH_SCENARIO_NAMES+=("stock-compinit")
@@ -194,6 +210,10 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion-multi-medium.zsh")
     BENCH_SCENARIO_NAMES+=("popup-open-accept-medium")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-open-accept-medium.zsh")
+    BENCH_SCENARIO_NAMES+=("screen-save-restore-small")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/screen-save-restore-small.zsh")
+    BENCH_SCENARIO_NAMES+=("screen-save-restore-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/screen-save-restore-medium.zsh")
     ;;
   *)
     print "Unknown benchmark mode: ${mode}" >&2
@@ -396,6 +416,27 @@ function run_benchmarks() {
     printf "  %-38s" "popup-medium vs stock-multi-medium"
     print_delta "${json_out}" "stock-completion-multi-medium" "popup-open-accept-medium" \
       "${BUDGET_POPUP_MEDIUM_P50}" "${BUDGET_POPUP_MEDIUM_P95}"
+  fi
+
+  # Positioning and screen helper micro benchmarks.
+  local micro_printed_header=0
+
+  if ((${+has_scenario[dsr-parse-noop]} && ${+has_scenario[dsr-parse-micro]})); then
+    print ""
+    print "${C_BOLD}Positioning and screen helper overhead${C_RESET}"
+    micro_printed_header=1
+    printf "  %-38s" "dsr-parse vs dsr-noop"
+    print_delta "${json_out}" "dsr-parse-noop" "dsr-parse-micro"
+  fi
+
+  if ((${+has_scenario[screen-save-restore-small]} && ${+has_scenario[screen-save-restore-medium]})); then
+    if ((!micro_printed_header)); then
+      print ""
+      print "${C_BOLD}Positioning and screen helper overhead${C_RESET}"
+      micro_printed_header=1
+    fi
+    printf "  %-38s" "screen-medium vs screen-small"
+    print_delta "${json_out}" "screen-save-restore-small" "screen-save-restore-medium"
   fi
 }
 
