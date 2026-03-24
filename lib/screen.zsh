@@ -71,7 +71,7 @@ function -cbx-screen-restore() {
   done
 
   buf+="${esc}8"
-  print -n "${buf}" >/dev/tty
+  print -rn -- "${buf}" >/dev/tty
 
   # Clear saved state.
   typeset -ga _CBX_SCREEN_SAVED=()
