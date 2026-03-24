@@ -107,4 +107,5 @@ function -cbx-popup-noop-widget() {
     zle send-break
     return
   fi
+  return 0
 }
