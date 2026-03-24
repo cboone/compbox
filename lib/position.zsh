@@ -15,9 +15,13 @@ function -cbx-dsr-probe() {
     return 1
   fi
 
-  # Flush any pending input from tty.
+  # Flush any pending input from tty. Cap at 256 iterations to guard
+  # against pathological input sources on the tty fd.
   local _junk
-  while read -t 0 -k 1 _junk </dev/tty 2>/dev/null; do :; done
+  local -i _flush=0
+  while ((_flush < 256)) && read -t 0 -k 1 _junk </dev/tty 2>/dev/null; do
+    ((_flush++))
+  done
 
   # Send DSR query.
   print -n $'\e[6n' >/dev/tty
