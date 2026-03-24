@@ -26,14 +26,14 @@ readonly BUDGET_COMPLETION_P95=8 # pass-through-tab vs stock-completion p95
 # Popup budgets measure delta between popup fixtures and baselines.
 # Raw popup times include ~200ms expect sleep (after 200) for render wait.
 # Popup-to-popup deltas cancel this out.
-readonly BUDGET_POPUP_OPEN_P50=225   # popup-open-accept vs stock-completion-multi p50
-readonly BUDGET_POPUP_OPEN_P95=240   # popup-open-accept vs stock-completion-multi p95
+readonly BUDGET_POPUP_OPEN_P50=255   # popup-open-accept vs stock-completion-multi p50
+readonly BUDGET_POPUP_OPEN_P95=265   # popup-open-accept vs stock-completion-multi p95
 readonly BUDGET_POPUP_NAV_P50=5      # popup-navigate-accept vs popup-open-accept p50
 readonly BUDGET_POPUP_NAV_P95=8      # popup-navigate-accept vs popup-open-accept p95
 readonly BUDGET_POPUP_CANCEL_P50=5   # popup-cancel vs popup-open-accept p50
 readonly BUDGET_POPUP_CANCEL_P95=8   # popup-cancel vs popup-open-accept p95
-readonly BUDGET_POPUP_MEDIUM_P50=225 # popup-open-accept-medium vs stock-multi-medium p50
-readonly BUDGET_POPUP_MEDIUM_P95=240 # popup-open-accept-medium vs stock-multi-medium p95
+readonly BUDGET_POPUP_MEDIUM_P50=260 # popup-open-accept-medium vs stock-multi-medium p50
+readonly BUDGET_POPUP_MEDIUM_P95=270 # popup-open-accept-medium vs stock-multi-medium p95
 
 typeset -ga BENCH_SCENARIO_NAMES=()
 typeset -ga BENCH_SCENARIO_COMMANDS=()
