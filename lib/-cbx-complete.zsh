@@ -79,18 +79,20 @@ function -cbx-popup-rows-from-candidates() {
     _CBX_POPUP_ROWS+=("${field1}${tab}${REPLY}")
   done
 
-  # Sort rows alphabetically by display text. Swap fields to
-  # "display\tid" so (oi) sorts by display, then swap back.
+  # Sort rows alphabetically (case-insensitive) by display text.
+  # Swap fields in place to "display\tid" so (oi) sorts by display,
+  # then swap back to "id\tdisplay" for consumers.
   if ((${#_CBX_POPUP_ROWS[@]} > 1)); then
-    local -a sort_tmp=()
+    local -i j
     local r
-    for r in "${_CBX_POPUP_ROWS[@]}"; do
-      sort_tmp+=("${r#*${tab}}${tab}${r%%${tab}*}")
+    for ((j = 1; j <= ${#_CBX_POPUP_ROWS[@]}; j++)); do
+      r="${_CBX_POPUP_ROWS[j]}"
+      _CBX_POPUP_ROWS[j]="${r#*${tab}}${tab}${r%%${tab}*}"
     done
-    sort_tmp=("${(@oi)sort_tmp}")
-    _CBX_POPUP_ROWS=()
-    for r in "${sort_tmp[@]}"; do
-      _CBX_POPUP_ROWS+=("${r#*${tab}}${tab}${r%%${tab}*}")
+    _CBX_POPUP_ROWS=("${(@oi)_CBX_POPUP_ROWS}")
+    for ((j = 1; j <= ${#_CBX_POPUP_ROWS[@]}; j++)); do
+      r="${_CBX_POPUP_ROWS[j]}"
+      _CBX_POPUP_ROWS[j]="${r#*${tab}}${tab}${r%%${tab}*}"
     done
   fi
 }
