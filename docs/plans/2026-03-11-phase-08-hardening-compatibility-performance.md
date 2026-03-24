@@ -43,22 +43,13 @@ Current behavior: TRAPWINCH sets a flag; popup widgets check it on the
 next keypress and call `send-break`. The popup dismisses on the first
 keypress after resize.
 
-To achieve immediate resize handling (like zsh's built-in `menu-select`),
-the rendering architecture must change. Candidates, in order of
-investigation priority:
-
-1. **`tmux display-menu`**: Delegates rendering, navigation, resize, and
-   cleanup to tmux. Perfect style match (the project goal is "styled to
-   match tmux's native menus"). Main challenge: `display-menu` returns
-   immediately; selection must be passed back via `wait-for`, pane
-   options, or `send-keys`. Cancel detection also needs a solution.
-1. **`POSTDISPLAY`**: Integrates with zle's refresh cycle (automatic
-   resize redraw). Limitations: content always below the buffer,
-   left-aligned, no arbitrary column positioning, no embedded ANSI
-   escapes (colors via `region_highlight` only).
-1. **`tmux display-popup`**: Runs a selector process inside a popup
-   overlay. More flexible than `display-menu` but requires IPC for
-   result passing and has the same synchronization challenges.
+This is an accepted limitation of the custom ANSI rendering approach.
+Alternatives (`tmux display-menu`, `tmux display-popup`, `POSTDISPLAY`)
+were evaluated and rejected: `display-menu` lacks filtering and
+scrolling; `display-popup` adds IPC complexity and process overhead while
+losing ghost text; `POSTDISPLAY` cannot position content arbitrarily and
+conflicts with ghost text. The current dismiss-on-next-keypress behavior
+is the permanent resize strategy.
 
 ### Compatibility matrix
 
