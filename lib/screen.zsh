@@ -62,10 +62,11 @@ function -cbx-screen-restore() {
 
   local -i start_row="${_CBX_SCREEN_SAVE_START}"
   local -i idx=0
+  local -i row
   local line
   for line in "${_CBX_SCREEN_SAVED[@]}"; do
     ((idx++))
-    local -i row=$((start_row + idx - 1))
+    row=$((start_row + idx - 1))
     buf+="${esc}[${row};1H${esc}[2K${line}"
   done
 
@@ -98,10 +99,11 @@ function -cbx-screen-restore-compose() {
 
   local -i start_row="${_CBX_SCREEN_SAVE_START}"
   local -i idx=0
+  local -i row
   local line
   for line in "${_CBX_SCREEN_SAVED[@]}"; do
     ((idx++))
-    local -i row=$((start_row + idx - 1))
+    row=$((start_row + idx - 1))
     buf+="${esc}[${row};1H${esc}[2K${line}"
   done
 
