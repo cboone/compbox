@@ -1,8 +1,9 @@
 #!/usr/bin/env zsh
 
-# Benchmark fixture: popup open and immediate accept.
-# Measures open-popup latency including render and accept exit for a small
-# candidate count (2 matches).
+# Benchmark fixture: popup open and accept with medium candidate count.
+# Measures open-popup latency with 15 candidates, exercising taller popup
+# rendering and larger screen save/restore area. Delta against
+# popup-open-accept isolates the cost of additional candidates.
 
 emulate -L zsh
 setopt ERR_EXIT NO_UNSET PIPE_FAIL
@@ -23,7 +24,9 @@ send -- "export PS1='bench> '\r"
 send -- "autoload -Uz compinit; compinit -C\r"
 send -- "source \"$project_root/compbox.plugin.zsh\"\r"
 send -- "tmpdir=\$(mktemp -d)\r"
-send -- "touch \"\$tmpdir/alpha-one\" \"\$tmpdir/alpha-two\" \"\$tmpdir/beta\"\r"
+send -- "touch \"\$tmpdir/alpha-01\" \"\$tmpdir/alpha-02\" \"\$tmpdir/alpha-03\" \"\$tmpdir/alpha-04\" \"\$tmpdir/alpha-05\"\r"
+send -- "touch \"\$tmpdir/alpha-06\" \"\$tmpdir/alpha-07\" \"\$tmpdir/alpha-08\" \"\$tmpdir/alpha-09\" \"\$tmpdir/alpha-10\"\r"
+send -- "touch \"\$tmpdir/alpha-11\" \"\$tmpdir/alpha-12\" \"\$tmpdir/alpha-13\" \"\$tmpdir/alpha-14\" \"\$tmpdir/alpha-15\"\r"
 
 # Stub DSR probe: expect PTYs have no terminal emulator to respond to
 # DSR queries, so the read loop would consume keystrokes intended for
@@ -33,8 +36,7 @@ send -- "function -cbx-dsr-probe() { typeset -gi _CBX_CURSOR_ROW=1 _CBX_CURSOR_C
 send -- "print __CBX_READY__\r"
 expect "__CBX_READY__"
 
-# Trigger popup with multi-match prefix, wait for render, accept first item.
-# Enter (^M) maps to -cbx-popup-accept-widget in the _cbx_menu keymap.
+# Trigger popup with 15-match prefix, wait for render, accept first item.
 send -- "echo \$tmpdir/alph\t"
 after 200
 send -- "\r"

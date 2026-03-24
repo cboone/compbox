@@ -24,14 +24,21 @@ readonly BUDGET_COMPLETION_P50=5 # pass-through-tab vs stock-completion p50
 readonly BUDGET_COMPLETION_P95=8 # pass-through-tab vs stock-completion p95
 
 # Popup budgets measure delta between popup fixtures and baselines.
-# Raw popup times include ~200ms expect sleep (after 200) for render wait.
-# Popup-to-popup deltas cancel this out.
-readonly BUDGET_POPUP_OPEN_P50=225 # popup-open-accept vs stock-completion-multi p50
-readonly BUDGET_POPUP_OPEN_P95=240 # popup-open-accept vs stock-completion-multi p95
-readonly BUDGET_POPUP_NAV_P50=5    # popup-navigate-accept vs popup-open-accept p50
-readonly BUDGET_POPUP_NAV_P95=8    # popup-navigate-accept vs popup-open-accept p95
-readonly BUDGET_POPUP_CANCEL_P50=5 # popup-cancel vs popup-open-accept p50
-readonly BUDGET_POPUP_CANCEL_P95=8 # popup-cancel vs popup-open-accept p95
+#
+# popup-open-accept and popup-open-accept-medium include a 200ms expect
+# sleep (after 200) for render wait. Their stock baselines do not, so
+# the POPUP_OPEN and POPUP_MEDIUM deltas include that sleep (~200ms of
+# the budget is render wait, ~55-60ms is actual popup overhead).
+# Popup-to-popup deltas (NAV, CANCEL) compare fixtures that both have
+# the sleep, so it cancels out and the budget reflects real overhead.
+readonly BUDGET_POPUP_OPEN_P50=255   # popup-open-accept vs stock-multi (includes ~200ms render wait)
+readonly BUDGET_POPUP_OPEN_P95=265   # popup-open-accept vs stock-multi (includes ~200ms render wait)
+readonly BUDGET_POPUP_NAV_P50=5      # popup-navigate-accept vs popup-open-accept (real overhead)
+readonly BUDGET_POPUP_NAV_P95=8      # popup-navigate-accept vs popup-open-accept (real overhead)
+readonly BUDGET_POPUP_CANCEL_P50=5   # popup-cancel vs popup-open-accept (real overhead)
+readonly BUDGET_POPUP_CANCEL_P95=8   # popup-cancel vs popup-open-accept (real overhead)
+readonly BUDGET_POPUP_MEDIUM_P50=260 # popup-open-accept-medium vs stock-multi-medium (includes ~200ms render wait)
+readonly BUDGET_POPUP_MEDIUM_P95=270 # popup-open-accept-medium vs stock-multi-medium (includes ~200ms render wait)
 
 typeset -ga BENCH_SCENARIO_NAMES=()
 typeset -ga BENCH_SCENARIO_COMMANDS=()
@@ -65,6 +72,8 @@ function check_deps() {
 
 function require_fixtures() {
   local -a required_fixtures=(
+    "${FIXTURES_DIR}/dsr-parse-micro.zsh"
+    "${FIXTURES_DIR}/dsr-parse-noop.zsh"
     "${FIXTURES_DIR}/lifecycle-only.zsh"
     "${FIXTURES_DIR}/noop-plugin.zsh"
     "${FIXTURES_DIR}/noop-plugin-startup.zsh"
@@ -75,6 +84,10 @@ function require_fixtures() {
     "${FIXTURES_DIR}/stock-compinit.zsh"
     "${FIXTURES_DIR}/stock-completion.zsh"
     "${FIXTURES_DIR}/stock-completion-multi.zsh"
+    "${FIXTURES_DIR}/stock-completion-multi-medium.zsh"
+    "${FIXTURES_DIR}/popup-open-accept-medium.zsh"
+    "${FIXTURES_DIR}/screen-save-restore-medium.zsh"
+    "${FIXTURES_DIR}/screen-save-restore-small.zsh"
   )
 
   local fixture
@@ -130,6 +143,10 @@ function configure_scenarios() {
 
   case "${mode}" in
   baseline)
+    BENCH_SCENARIO_NAMES+=("dsr-parse-noop")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/dsr-parse-noop.zsh")
+    BENCH_SCENARIO_NAMES+=("dsr-parse-micro")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/dsr-parse-micro.zsh")
     BENCH_SCENARIO_NAMES+=("stock-compinit")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-compinit.zsh")
     BENCH_SCENARIO_NAMES+=("lifecycle-only")
@@ -146,6 +163,14 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-navigate-accept.zsh")
     BENCH_SCENARIO_NAMES+=("popup-cancel")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-cancel.zsh")
+    BENCH_SCENARIO_NAMES+=("stock-completion-multi-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion-multi-medium.zsh")
+    BENCH_SCENARIO_NAMES+=("popup-open-accept-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-open-accept-medium.zsh")
+    BENCH_SCENARIO_NAMES+=("screen-save-restore-small")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/screen-save-restore-small.zsh")
+    BENCH_SCENARIO_NAMES+=("screen-save-restore-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/screen-save-restore-medium.zsh")
     ;;
   smoke)
     BENCH_SCENARIO_NAMES+=("stock-compinit")
@@ -162,6 +187,10 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-open-accept.zsh")
     ;;
   full)
+    BENCH_SCENARIO_NAMES+=("dsr-parse-noop")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/dsr-parse-noop.zsh")
+    BENCH_SCENARIO_NAMES+=("dsr-parse-micro")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/dsr-parse-micro.zsh")
     BENCH_SCENARIO_NAMES+=("stock-zsh")
     BENCH_SCENARIO_COMMANDS+=("zsh -f -c 'exit'")
     BENCH_SCENARIO_NAMES+=("stock-compinit")
@@ -182,6 +211,14 @@ function configure_scenarios() {
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-navigate-accept.zsh")
     BENCH_SCENARIO_NAMES+=("popup-cancel")
     BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-cancel.zsh")
+    BENCH_SCENARIO_NAMES+=("stock-completion-multi-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/stock-completion-multi-medium.zsh")
+    BENCH_SCENARIO_NAMES+=("popup-open-accept-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/popup-open-accept-medium.zsh")
+    BENCH_SCENARIO_NAMES+=("screen-save-restore-small")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/screen-save-restore-small.zsh")
+    BENCH_SCENARIO_NAMES+=("screen-save-restore-medium")
+    BENCH_SCENARIO_COMMANDS+=("zsh -f ${FIXTURES_DIR:q}/screen-save-restore-medium.zsh")
     ;;
   *)
     print "Unknown benchmark mode: ${mode}" >&2
@@ -373,6 +410,38 @@ function run_benchmarks() {
     printf "  %-38s" "popup-cancel vs popup-open"
     print_delta "${json_out}" "popup-open-accept" "popup-cancel" \
       "${BUDGET_POPUP_CANCEL_P50}" "${BUDGET_POPUP_CANCEL_P95}"
+  fi
+
+  if ((${+has_scenario[stock-completion-multi-medium]} && ${+has_scenario[popup-open-accept-medium]})); then
+    if ((!popup_printed_header)); then
+      print ""
+      print "${C_BOLD}Popup overhead${C_RESET}"
+      popup_printed_header=1
+    fi
+    printf "  %-38s" "popup-medium vs stock-multi-medium"
+    print_delta "${json_out}" "stock-completion-multi-medium" "popup-open-accept-medium" \
+      "${BUDGET_POPUP_MEDIUM_P50}" "${BUDGET_POPUP_MEDIUM_P95}"
+  fi
+
+  # Positioning and screen helper micro benchmarks.
+  local micro_printed_header=0
+
+  if ((${+has_scenario[dsr-parse-noop]} && ${+has_scenario[dsr-parse-micro]})); then
+    print ""
+    print "${C_BOLD}Positioning and screen helper overhead${C_RESET}"
+    micro_printed_header=1
+    printf "  %-38s" "dsr-parse vs dsr-noop"
+    print_delta "${json_out}" "dsr-parse-noop" "dsr-parse-micro"
+  fi
+
+  if ((${+has_scenario[screen-save-restore-small]} && ${+has_scenario[screen-save-restore-medium]})); then
+    if ((!micro_printed_header)); then
+      print ""
+      print "${C_BOLD}Positioning and screen helper overhead${C_RESET}"
+      micro_printed_header=1
+    fi
+    printf "  %-38s" "screen-medium vs screen-small"
+    print_delta "${json_out}" "screen-save-restore-small" "screen-save-restore-medium"
   fi
 }
 

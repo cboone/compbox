@@ -40,10 +40,12 @@ readonly -a _SHELLCHECK_SKILL_CODES=(SC1090 SC2039 SC2154 SC2168 SC2296 SC2299)
 #           SUFFIX, IPREFIX, ISUFFIX), test fixture globals, indirect expansion
 #   SC2206  Quote to prevent splitting: zsh does not split unquoted expansions
 #   SC2215  Flag used as command name: zsh internal functions with - prefix
+#   SC1027  Expected another argument: zsh <-> numeric glob pattern
 #   SC1046  Couldn't find 'fi': zsh always blocks confuse bash parser
 #   SC1047  Expected 'fi': zsh always blocks confuse bash parser
+#   SC1094  Parsing of sourced file failed: cascades from zsh-specific syntax
 #   SC1141  Unexpected tokens after compound command: zsh always blocks
-readonly -a _SHELLCHECK_PROJECT_CODES=(SC1036 SC1072 SC1073 SC1046 SC1047 SC1141 SC2034 SC2206 SC2215)
+readonly -a _SHELLCHECK_PROJECT_CODES=(SC1027 SC1036 SC1072 SC1073 SC1046 SC1047 SC1094 SC1141 SC2034 SC2206 SC2215)
 
 readonly SHELLCHECK_EXCLUDE="${(j:,:)_SHELLCHECK_SKILL_CODES},${(j:,:)_SHELLCHECK_PROJECT_CODES}"
 

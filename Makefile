@@ -1,4 +1,4 @@
-.PHONY: lint lint-md lint-md-fix spell test test-scrut test-scrut-update test-zunit check-zsh format-zsh verify bench bench-baseline help
+.PHONY: lint lint-md lint-md-fix spell test test-scrut test-scrut-update test-zunit check-zsh format-zsh verify bench bench-smoke bench-baseline help
 
 lint: lint-md check-zsh spell ## Run all linters
 
@@ -29,6 +29,9 @@ verify: check-zsh test ## Run checks and tests
 
 bench: ## Run benchmarks
 	zsh scripts/bench/run.zsh
+
+bench-smoke: ## Run quick smoke benchmarks (10 iterations)
+	zsh scripts/bench/run.zsh --smoke
 
 bench-baseline: ## Capture benchmark baseline
 	zsh scripts/bench/run.zsh --baseline

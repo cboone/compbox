@@ -214,6 +214,8 @@
     typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
   }
 
+  cbx_stub_phase05_positioning
+
   local -a zle_calls=()
   function zle() {
     zle_calls+=("${1}")
@@ -266,6 +268,8 @@
     local tab=$'\t'
     typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
   }
+
+  cbx_stub_phase05_positioning
 
   local original_buffer="echo /tmp/alph"
   local original_cursor="${#original_buffer}"

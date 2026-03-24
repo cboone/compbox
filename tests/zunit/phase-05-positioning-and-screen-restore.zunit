@@ -1,0 +1,666 @@
+#!/usr/bin/env zunit
+
+@setup {
+  load "helpers/bootstrap.zsh"
+  cbx_load_plugin
+}
+
+@teardown {
+  if (( ${+functions[cbx_reset]} )); then
+    cbx_reset
+  fi
+}
+
+@test 'DSR parse extracts row and column from valid response' {
+  -cbx-dsr-parse $'\e[12;45R'
+
+  assert "${_CBX_CURSOR_ROW}" same_as "12"
+  assert "${_CBX_CURSOR_COL}" same_as "45"
+}
+
+@test 'DSR parse rejects malformed response without semicolon' {
+  run -cbx-dsr-parse $'\e[1234R'
+
+  assert "${state}" same_as "1"
+}
+
+@test 'DSR parse rejects empty input' {
+  run -cbx-dsr-parse ''
+
+  assert "${state}" same_as "1"
+}
+
+@test 'DSR parse rejects non-numeric values' {
+  run -cbx-dsr-parse $'\e[abc;defR'
+
+  assert "${state}" same_as "1"
+}
+
+@test 'pane geometry reads LINES and COLUMNS' {
+  LINES=30
+  COLUMNS=100
+
+  -cbx-pane-geometry
+
+  assert "${_CBX_PANE_HEIGHT}" same_as "30"
+  assert "${_CBX_PANE_WIDTH}" same_as "100"
+}
+
+@test 'pane geometry fails when LINES and COLUMNS are zero and no TMUX' {
+  unset TMUX
+
+  run -cbx-pane-geometry 0 0
+
+  assert "${state}" same_as "1"
+}
+
+@test 'popup dimensions computes height and width from rows' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- alpha bravo charlie
+  -cbx-popup-rows-from-candidates
+
+  -cbx-popup-dimensions
+
+  assert "${_CBX_POPUP_HEIGHT}" same_as "5"
+  assert "${_CBX_POPUP_WIDTH}" same_as "11"
+}
+
+@test 'popup dimensions fails for empty rows' {
+  typeset -ga _CBX_POPUP_ROWS=()
+
+  run -cbx-popup-dimensions
+
+  assert "${state}" same_as "1"
+}
+
+@test 'popup dimensions uses longest display for width' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- ab checkout xy
+  -cbx-popup-rows-from-candidates
+
+  -cbx-popup-dimensions
+
+  # Width = longest (8 for "checkout") + 4 (borders + padding)
+  assert "${_CBX_POPUP_WIDTH}" same_as "12"
+}
+
+@test 'placement chooses below when enough room' {
+  typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
+  typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
+  typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=10
+  typeset -ga _CBX_CANDIDATES=()
+
+  -cbx-popup-placement
+
+  assert "${_CBX_POPUP_DIRECTION}" same_as "below"
+  assert "${_CBX_POPUP_ROW}" same_as "6"
+}
+
+@test 'placement chooses above when not enough room below' {
+  typeset -gi _CBX_CURSOR_ROW=22 _CBX_CURSOR_COL=1
+  typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
+  typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=10
+  typeset -ga _CBX_CANDIDATES=()
+
+  -cbx-popup-placement
+
+  assert "${_CBX_POPUP_DIRECTION}" same_as "above"
+  assert "${_CBX_POPUP_ROW}" same_as "18"
+}
+
+@test 'placement fails when no room in either direction' {
+  typeset -gi _CBX_CURSOR_ROW=3 _CBX_CURSOR_COL=1
+  typeset -gi _CBX_PANE_HEIGHT=5 _CBX_PANE_WIDTH=80
+  typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=10
+  typeset -ga _CBX_CANDIDATES=()
+
+  run -cbx-popup-placement
+
+  assert "${state}" same_as "1"
+}
+
+@test 'placement clamps popup to right pane edge' {
+  typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=75
+  typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
+  typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=10
+  typeset -ga _CBX_CANDIDATES=()
+
+  -cbx-popup-placement
+
+  assert "${_CBX_POPUP_COL}" same_as "71"
+}
+
+@test 'placement floors column at 1 for narrow pane' {
+  typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
+  typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=5
+  typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=10
+  typeset -ga _CBX_CANDIDATES=()
+
+  -cbx-popup-placement
+
+  assert "${_CBX_POPUP_COL}" same_as "1"
+  assert "${_CBX_POPUP_WIDTH}" same_as "5"
+}
+
+@test 'placement clamps popup width to pane width' {
+  typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=4
+  typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=8
+  typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=20
+  typeset -ga _CBX_CANDIDATES=()
+
+  -cbx-popup-placement
+
+  assert "${_CBX_POPUP_WIDTH}" same_as "8"
+}
+
+@test 'anchor col offsets by prefix width' {
+  -cbx-candidate-reset
+  PREFIX="alpha"
+  -cbx-capture-from-compadd -- alpha another
+  typeset -gi _CBX_CURSOR_COL=20
+
+  -cbx-popup-anchor-col
+
+  # PREFIX is 5 chars, anchor = 20 - 5 = 15
+  assert "${REPLY}" same_as "15"
+}
+
+@test 'anchor col floors at 1' {
+  -cbx-candidate-reset
+  PREFIX="alpha"
+  -cbx-capture-from-compadd -- alpha another
+  typeset -gi _CBX_CURSOR_COL=3
+
+  -cbx-popup-anchor-col
+
+  assert "${REPLY}" same_as "1"
+}
+
+@test 'anchor col returns cursor col with no candidates' {
+  -cbx-candidate-reset
+  typeset -gi _CBX_CURSOR_COL=15
+
+  -cbx-popup-anchor-col
+
+  assert "${REPLY}" same_as "15"
+}
+
+@test 'render buffer uses CUP sequences with placement globals' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- aa bb
+  -cbx-popup-rows-from-candidates
+  typeset -gi _CBX_POPUP_SELECTED=1
+  typeset -gi _CBX_POPUP_ROW=10 _CBX_POPUP_COL=5
+
+  -cbx-popup-render-buffer
+
+  # Buffer should contain CUP escape for row 10 col 5.
+  [[ "${REPLY}" == *$'\e[10;5H'* ]] && local has_cup=1 || local has_cup=0
+  assert "${has_cup}" same_as "1"
+}
+
+@test 'render buffer uses relative positioning without placement globals' {
+  -cbx-candidate-reset
+  -cbx-capture-from-compadd -- aa bb
+  -cbx-popup-rows-from-candidates
+  typeset -gi _CBX_POPUP_SELECTED=1
+  unset _CBX_POPUP_ROW _CBX_POPUP_COL
+
+  -cbx-popup-render-buffer
+
+  # Buffer should contain newline-CR for relative movement.
+  [[ "${REPLY}" == *$'\n\r'* ]] && local has_newline=1 || local has_newline=0
+  assert "${has_newline}" same_as "1"
+}
+
+@test 'render buffer truncates row text to clamped popup width' {
+  local tab=$'\t'
+  typeset -ga _CBX_POPUP_ROWS=("1${tab}abcdefghij")
+  typeset -gi _CBX_POPUP_SELECTED=0
+  typeset -gi _CBX_POPUP_HEIGHT=3
+  typeset -gi _CBX_POPUP_WIDTH=8
+
+  -cbx-popup-render-buffer
+
+  [[ "${REPLY}" == *"abcd"* ]] && local has_abcd=1 || local has_abcd=0
+  [[ "${REPLY}" == *"abcde"* ]] && local has_abcde=1 || local has_abcde=0
+
+  assert "${has_abcd}" same_as "1"
+  assert "${has_abcde}" same_as "0"
+}
+
+@test 'erase buffer uses CUP sequences with placement globals' {
+  typeset -gi _CBX_POPUP_RENDERED_LINES=3
+  typeset -gi _CBX_POPUP_ROW=10
+
+  -cbx-popup-erase-buffer
+
+  [[ "${REPLY}" == *$'\e[10;1H'* ]] && local has_cup=1 || local has_cup=0
+  assert "${has_cup}" same_as "1"
+}
+
+@test 'erase buffer uses relative positioning without placement globals' {
+  typeset -gi _CBX_POPUP_RENDERED_LINES=3
+  unset _CBX_POPUP_ROW
+
+  -cbx-popup-erase-buffer
+
+  [[ "${REPLY}" == *$'\n\r'* ]] && local has_newline=1 || local has_newline=0
+  assert "${has_newline}" same_as "1"
+}
+
+@test 'screen restore compose builds CUP sequences for saved rows' {
+  typeset -ga _CBX_SCREEN_SAVED=("line-a" "line-b" "line-c")
+  typeset -gi _CBX_SCREEN_SAVE_START=5 _CBX_SCREEN_SAVE_END=7
+
+  -cbx-screen-restore-compose
+
+  [[ "${REPLY}" == *$'\e[5;1H'* ]] && local r5=1 || local r5=0
+  [[ "${REPLY}" == *$'\e[6;1H'* ]] && local r6=1 || local r6=0
+  [[ "${REPLY}" == *$'\e[7;1H'* ]] && local r7=1 || local r7=0
+  [[ "${REPLY}" == *"line-a"* ]] && local a=1 || local a=0
+  [[ "${REPLY}" == *"line-c"* ]] && local c=1 || local c=0
+
+  assert "${r5}" same_as "1"
+  assert "${r6}" same_as "1"
+  assert "${r7}" same_as "1"
+  assert "${a}" same_as "1"
+  assert "${c}" same_as "1"
+}
+
+@test 'screen restore compose preserves saved state for inspection' {
+  typeset -ga _CBX_SCREEN_SAVED=("line-a")
+  typeset -gi _CBX_SCREEN_SAVE_START=5 _CBX_SCREEN_SAVE_END=5
+
+  -cbx-screen-restore-compose
+
+  assert "${#_CBX_SCREEN_SAVED[@]}" same_as "1"
+  assert "${REPLY}" is_not_empty
+}
+
+@test 'screen restore compose fails for empty saved state' {
+  typeset -ga _CBX_SCREEN_SAVED=()
+
+  run -cbx-screen-restore-compose
+
+  assert "${state}" same_as "1"
+}
+
+@test 'DSR failure path skips popup in cbx-complete' {
+  function -cbx-complete-should-popup() {
+    return 0
+  }
+
+  function -cbx-popup-rows-from-candidates() {
+    local tab=$'\t'
+    typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
+  }
+
+  # Stub DSR probe to fail.
+  function -cbx-dsr-probe() {
+    return 1
+  }
+
+  local -a zle_calls=()
+  function zle() {
+    zle_calls+=("${1}")
+    return 0
+  }
+
+  typeset -gi saw_render=0
+  function -cbx-popup-render() { typeset -gi saw_render=1; }
+
+  _CBX_ORIG_TAB_EMACS="expand-or-complete"
+  _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+  KEYMAP="main"
+  BUFFER="echo /tmp/alph"
+  CURSOR="${#BUFFER}"
+
+  cbx-complete
+
+  assert "${saw_render}" same_as "0"
+  assert "${_CBX_POPUP_ACTIVE}" same_as "0"
+
+  local calls_joined="${(j:|:)zle_calls}"
+  [[ "${calls_joined}" == *"recursive-edit"* ]] && local saw_recursive=1 || local saw_recursive=0
+  assert "${saw_recursive}" same_as "0"
+
+  local -i stock_calls=0
+  local call
+  for call in "${zle_calls[@]}"; do
+    if [[ "${call}" == "expand-or-complete" ]]; then
+      stock_calls=$((stock_calls + 1))
+    fi
+  done
+  assert "${stock_calls}" same_as "2"
+}
+
+@test 'placement failure path skips popup in cbx-complete' {
+  function -cbx-complete-should-popup() {
+    return 0
+  }
+
+  function -cbx-popup-rows-from-candidates() {
+    local tab=$'\t'
+    typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
+  }
+
+  # Stub DSR to succeed but placement to fail.
+  function -cbx-dsr-probe() {
+    typeset -gi _CBX_CURSOR_ROW=3 _CBX_CURSOR_COL=1
+    return 0
+  }
+  function -cbx-pane-geometry() {
+    typeset -gi _CBX_PANE_HEIGHT=5 _CBX_PANE_WIDTH=80
+    return 0
+  }
+  function -cbx-popup-dimensions() {
+    typeset -gi _CBX_POPUP_HEIGHT=10 _CBX_POPUP_WIDTH=10
+    return 0
+  }
+
+  local -a zle_calls=()
+  function zle() {
+    zle_calls+=("${1}")
+    return 0
+  }
+
+  typeset -gi saw_render=0
+  function -cbx-popup-render() { typeset -gi saw_render=1; }
+
+  _CBX_ORIG_TAB_EMACS="expand-or-complete"
+  _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+  KEYMAP="main"
+  BUFFER="echo test"
+  CURSOR="${#BUFFER}"
+
+  cbx-complete
+
+  assert "${saw_render}" same_as "0"
+  assert "${_CBX_POPUP_ACTIVE}" same_as "0"
+
+  local -i stock_calls=0
+  local call
+  for call in "${zle_calls[@]}"; do
+    if [[ "${call}" == "expand-or-complete" ]]; then
+      stock_calls=$((stock_calls + 1))
+    fi
+  done
+  assert "${stock_calls}" same_as "2"
+}
+
+@test 'cbx-complete truncates popup rows when height is clamped' {
+  function -cbx-complete-should-popup() {
+    return 0
+  }
+
+  function -cbx-popup-rows-from-candidates() {
+    local tab=$'\t'
+    typeset -ga _CBX_POPUP_ROWS=(
+      "1${tab}alpha"
+      "2${tab}bravo"
+      "3${tab}charlie"
+      "4${tab}delta"
+    )
+  }
+
+  LINES=24
+  COLUMNS=80
+
+  function -cbx-dsr-probe() {
+    typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
+    return 0
+  }
+  function -cbx-pane-geometry() {
+    typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
+    return 0
+  }
+  function -cbx-popup-dimensions() {
+    typeset -gi _CBX_POPUP_HEIGHT=6 _CBX_POPUP_WIDTH=10
+    return 0
+  }
+  function -cbx-popup-placement() {
+    # Simulate placement clamping height to 4 total lines (2 visible rows).
+    typeset -gi _CBX_POPUP_ROW=6 _CBX_POPUP_COL=1
+    typeset -gi _CBX_POPUP_HEIGHT=4
+    typeset -g _CBX_POPUP_DIRECTION="below"
+    return 0
+  }
+
+  typeset -gi render_row_count=0
+  function -cbx-popup-render() {
+    typeset -gi render_row_count=${#_CBX_POPUP_ROWS[@]}
+  }
+
+  function -cbx-popup-erase() { :; }
+  function -cbx-popup-keymap-create() { :; }
+  function -cbx-popup-keymap-destroy() { :; }
+  function -cbx-screen-save() { return 1; }
+  function -cbx-screen-restore() { return 1; }
+
+  function zle() {
+    if [[ "${1}" == "recursive-edit" ]]; then
+      typeset -g _CBX_POPUP_ACTION="cancel"
+    fi
+    return 0
+  }
+
+  _CBX_ORIG_TAB_EMACS="expand-or-complete"
+  _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+  KEYMAP="main"
+  BUFFER="echo test"
+  CURSOR="${#BUFFER}"
+
+  cbx-complete
+
+  assert "${render_row_count}" same_as "2"
+  assert "${#_CBX_POPUP_ROWS[@]}" same_as "2"
+}
+
+@test 'cbx-complete accept path with positioning calls screen save and restore' {
+  function -cbx-complete-should-popup() {
+    return 0
+  }
+
+  function -cbx-popup-rows-from-candidates() {
+    local tab=$'\t'
+    typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
+  }
+
+  # Match LINES/COLUMNS to pane geometry so resize detection does not trigger.
+  LINES=24
+  COLUMNS=80
+
+  function -cbx-dsr-probe() {
+    typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
+    return 0
+  }
+  function -cbx-pane-geometry() {
+    typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
+    return 0
+  }
+  function -cbx-popup-dimensions() {
+    typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=10
+    return 0
+  }
+  function -cbx-popup-placement() {
+    typeset -gi _CBX_POPUP_ROW=6 _CBX_POPUP_COL=1
+    typeset -g _CBX_POPUP_DIRECTION="below"
+    return 0
+  }
+
+  typeset -gi saw_screen_save=0
+  function -cbx-screen-save() {
+    typeset -gi saw_screen_save=1
+    return 1
+  }
+
+  typeset -gi saw_screen_restore=0
+  function -cbx-screen-restore() {
+    typeset -gi saw_screen_restore=1
+    return 1
+  }
+
+  local -a zle_calls=()
+  function zle() {
+    zle_calls+=("${1}")
+    if [[ "${1}" == "recursive-edit" ]]; then
+      typeset -g _CBX_POPUP_ACTION="accept"
+    fi
+    return 0
+  }
+
+  function -cbx-popup-render() { :; }
+  function -cbx-popup-erase() { :; }
+  function -cbx-popup-keymap-create() { :; }
+  function -cbx-popup-keymap-destroy() { :; }
+
+  _CBX_ORIG_TAB_EMACS="expand-or-complete"
+  _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+  KEYMAP="main"
+  BUFFER="echo test"
+  CURSOR="${#BUFFER}"
+
+  cbx-complete
+
+  assert "${saw_screen_save}" same_as "1"
+  assert "${saw_screen_restore}" same_as "1"
+  assert "${_CBX_POPUP_ACTIVE}" same_as "0"
+}
+
+@test 'resize during popup skips CUP cleanup and redraws prompt' {
+  function -cbx-complete-should-popup() {
+    return 0
+  }
+
+  function -cbx-popup-rows-from-candidates() {
+    local tab=$'\t'
+    typeset -ga _CBX_POPUP_ROWS=("1${tab}alpha" "2${tab}bravo")
+  }
+
+  LINES=24
+  COLUMNS=80
+
+  function -cbx-dsr-probe() {
+    typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=1
+    return 0
+  }
+  function -cbx-pane-geometry() {
+    typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
+    return 0
+  }
+  function -cbx-popup-dimensions() {
+    typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=10
+    return 0
+  }
+  function -cbx-popup-placement() {
+    typeset -gi _CBX_POPUP_ROW=6 _CBX_POPUP_COL=1
+    typeset -g _CBX_POPUP_DIRECTION="below"
+    return 0
+  }
+
+  function -cbx-screen-save() {
+    typeset -ga _CBX_SCREEN_SAVED=("saved-a" "saved-b")
+    return 0
+  }
+
+  typeset -gi saw_erase=0
+  function -cbx-popup-erase() { typeset -gi saw_erase=1; }
+
+  typeset -gi saw_screen_restore=0
+  function -cbx-screen-restore() {
+    typeset -gi saw_screen_restore=1
+    return 0
+  }
+
+  local -a zle_calls=()
+  function zle() {
+    zle_calls+=("${1}")
+    if [[ "${1}" == "recursive-edit" ]]; then
+      # Simulate resize: change LINES during recursive-edit.
+      LINES=30
+    fi
+    return 0
+  }
+
+  function -cbx-popup-render() { :; }
+  function -cbx-popup-keymap-create() { :; }
+  function -cbx-popup-keymap-destroy() { :; }
+
+  _CBX_ORIG_TAB_EMACS="expand-or-complete"
+  _CBX_ORIG_TAB_VIINS="vi-expand-or-complete"
+  KEYMAP="main"
+  BUFFER="echo test"
+  CURSOR="${#BUFFER}"
+
+  cbx-complete
+
+  # Erase and screen restore should NOT have been called.
+  assert "${saw_erase}" same_as "0"
+  assert "${saw_screen_restore}" same_as "0"
+
+  # Saved screen state should have been cleared.
+  assert "${#_CBX_SCREEN_SAVED[@]}" same_as "0"
+
+  # reset-prompt should have been called instead.
+  local calls_joined="${(j:|:)zle_calls}"
+  [[ "${calls_joined}" == *"reset-prompt"* ]] && local saw_reset=1 || local saw_reset=0
+  assert "${saw_reset}" same_as "1"
+}
+
+@test 'disable cleans up phase 05 positioning globals' {
+  cbx-enable
+
+  # Simulate phase 05 state.
+  typeset -gi _CBX_CURSOR_ROW=5 _CBX_CURSOR_COL=10
+  typeset -gi _CBX_PANE_HEIGHT=24 _CBX_PANE_WIDTH=80
+  typeset -gi _CBX_POPUP_ROW=6 _CBX_POPUP_COL=10
+  typeset -gi _CBX_POPUP_HEIGHT=4 _CBX_POPUP_WIDTH=12
+  typeset -g _CBX_POPUP_DIRECTION="below"
+  typeset -ga _CBX_SCREEN_SAVED=("saved-line")
+  typeset -gi _CBX_SCREEN_SAVE_START=6 _CBX_SCREEN_SAVE_END=9
+
+  cbx-disable
+
+  assert "(( ${+_CBX_CURSOR_ROW} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_CURSOR_COL} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_PANE_HEIGHT} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_PANE_WIDTH} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_POPUP_ROW} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_POPUP_COL} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_POPUP_HEIGHT} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_POPUP_WIDTH} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_POPUP_DIRECTION} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_SCREEN_SAVED} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_SCREEN_SAVE_START} ))" same_as "(( 0 ))"
+  assert "(( ${+_CBX_SCREEN_SAVE_END} ))" same_as "(( 0 ))"
+}
+
+@test 'compbox.plugin.zsh bootstraps with phase 05 functions available' {
+  local output
+  output="$(
+    zsh -f -c '
+      source "$1/compbox.plugin.zsh"
+      print -r -- "has-dsr-probe=${+functions[-cbx-dsr-probe]}"
+      print -r -- "has-dsr-parse=${+functions[-cbx-dsr-parse]}"
+      print -r -- "has-pane-geometry=${+functions[-cbx-pane-geometry]}"
+      print -r -- "has-popup-dimensions=${+functions[-cbx-popup-dimensions]}"
+      print -r -- "has-popup-placement=${+functions[-cbx-popup-placement]}"
+      print -r -- "has-popup-anchor-col=${+functions[-cbx-popup-anchor-col]}"
+      print -r -- "has-screen-save=${+functions[-cbx-screen-save]}"
+      print -r -- "has-screen-restore=${+functions[-cbx-screen-restore]}"
+    ' _ "${CBX_PROJECT_ROOT}"
+  )"
+
+  local -a lines
+  lines=("${(@f)output}")
+
+  assert "${lines[1]}" same_as "has-dsr-probe=1"
+  assert "${lines[2]}" same_as "has-dsr-parse=1"
+  assert "${lines[3]}" same_as "has-pane-geometry=1"
+  assert "${lines[4]}" same_as "has-popup-dimensions=1"
+  assert "${lines[5]}" same_as "has-popup-placement=1"
+  assert "${lines[6]}" same_as "has-popup-anchor-col=1"
+  assert "${lines[7]}" same_as "has-screen-save=1"
+  assert "${lines[8]}" same_as "has-screen-restore=1"
+}

@@ -32,11 +32,13 @@ function cbx-disable() {
     unfunction -- -cbx-orig-compadd
   fi
 
-  # Defensive popup cleanup: destroy keymap and erase if still active.
-  # Guard with || true so failures don't trigger ERR_EXIT mid-cleanup.
+  # Defensive popup cleanup: destroy keymap, erase, and restore screen
+  # if still active. Guard with || true so failures don't trigger
+  # ERR_EXIT mid-cleanup.
   if ((${_CBX_POPUP_ACTIVE:-0})); then
     -cbx-popup-keymap-destroy 2>/dev/null || true
     -cbx-popup-erase 2>/dev/null || true
+    -cbx-screen-restore 2>/dev/null || true
     print -n $'\e[?25h' >/dev/tty 2>/dev/null || true
   fi
 
@@ -47,4 +49,7 @@ function cbx-disable() {
   unset _CBX_POPUP_ACTIVE _CBX_APPLY_ID 2>/dev/null
   unset _CBX_RESOLVE_PREFIX _CBX_RESOLVE_SUFFIX _CBX_RESOLVE_IPREFIX _CBX_RESOLVE_ISUFFIX 2>/dev/null
   unset _CBX_POPUP_ROWS _CBX_POPUP_SELECTED _CBX_POPUP_ACTION _CBX_POPUP_RENDERED_LINES 2>/dev/null
+  unset _CBX_CURSOR_ROW _CBX_CURSOR_COL _CBX_PANE_HEIGHT _CBX_PANE_WIDTH 2>/dev/null
+  unset _CBX_POPUP_ROW _CBX_POPUP_COL _CBX_POPUP_HEIGHT _CBX_POPUP_WIDTH _CBX_POPUP_DIRECTION 2>/dev/null
+  unset _CBX_SCREEN_SAVED _CBX_SCREEN_SAVE_START _CBX_SCREEN_SAVE_END 2>/dev/null
 }

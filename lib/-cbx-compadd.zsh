@@ -152,6 +152,7 @@ function -cbx-capture-from-compadd() {
   # Capture completion state parameters.
   local cur_prefix="${PREFIX:-}"
   local cur_suffix="${SUFFIX:-}"
+
   local cur_iprefix="${IPREFIX:-}"
   local cur_isuffix="${ISUFFIX:-}"
 
