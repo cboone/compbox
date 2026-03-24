@@ -126,6 +126,8 @@ function cbx-complete() {
       # dependent cleanup and let reset-prompt redraw everything.
       if ((LINES != _CBX_PANE_HEIGHT || COLUMNS != _CBX_PANE_WIDTH)); then
         typeset -ga _CBX_SCREEN_SAVED=()
+        typeset -gi _CBX_SCREEN_SAVE_START=0
+        typeset -gi _CBX_SCREEN_SAVE_END=0
         zle reset-prompt 2>/dev/null || true
       else
         -cbx-popup-erase

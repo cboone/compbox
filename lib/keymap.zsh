@@ -33,6 +33,11 @@ function -cbx-popup-keymap-create() {
   bindkey -M _cbx_menu '^C' -cbx-popup-cancel-widget
   bindkey -M _cbx_menu '^G' -cbx-popup-cancel-widget
 
+  # Catch-all: bind printable ASCII to noop so any keypress after
+  # resize triggers a widget that checks _CBX_RESIZED and dismisses.
+  # Specific bindings above take precedence over this range binding.
+  bindkey -M _cbx_menu -R ' '-'~' -cbx-popup-noop-widget
+
   # Prevent common escape sequences from triggering bare-escape cancel.
   bindkey -M _cbx_menu $'\e[C' -cbx-popup-noop-widget
   bindkey -M _cbx_menu $'\e[D' -cbx-popup-noop-widget
