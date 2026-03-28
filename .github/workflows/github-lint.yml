@@ -19,4 +19,4 @@ permissions:
 
 jobs:
   github-lint:
-    uses: cboone/gh-actions/.github/workflows/github-lint.yml@v1
+    uses: cboone/gh-actions/.github/workflows/github-lint.yml@v2.1.2

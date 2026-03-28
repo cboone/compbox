@@ -25,7 +25,7 @@ permissions:
 
 jobs:
   text-lint:
-    uses: cboone/gh-actions/.github/workflows/text-lint.yml@v1
+    uses: cboone/gh-actions/.github/workflows/text-lint.yml@v2.1.2
     with:
       run-cspell: true
 
@@ -69,7 +69,7 @@ jobs:
         run: make check-zsh
 
   test-scrut:
-    uses: cboone/gh-actions/.github/workflows/scrut.yml@v1
+    uses: cboone/gh-actions/.github/workflows/scrut.yml@v2.1.2
     with:
       scrut-shell: zsh
       scrut-test-dir: "tests/scrut/"
